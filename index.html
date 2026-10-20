@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 3.1</title>
+<title>Groove Lab 3.2-dev</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -43,10 +43,14 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .track:has(.off-grid){margin-bottom:24px}
 .beats{display:grid;grid-template-columns:71px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
 #score{direction:ltr;overflow:hidden;background:#fff;color:#17212a;border-radius:8px;min-height:0;width:100%}#score svg{display:block;width:100%;height:auto;max-width:100%}
-.variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
+.variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variation-length{padding:3px 4px;min-height:27px;border-radius:5px;font-size:11px;background:#354856;border:1px solid #607e89;color:#ecf4f6}.variation-length.is-two{background:#086579;border-color:#2bb5cc}.variation-cell{display:flex;flex-direction:column;gap:3px;min-width:0}.variation-cell>.variation-btn{min-height:40px;padding:5px 2px}
+.bar-panel{border:1px solid #54707d;border-radius:10px;padding:7px 5px;margin:8px 0;min-width:0}.bar-panel.is-active{border:2px solid #2bb5cc;background:#19333d}.bar-panel .track{margin:10px 0}
+.bar-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin:3px 0 7px}
+.bar-head .repeat-label{font-size:11px;color:#acc2ce}.bar-panel .beat-controls{margin-top:4px}
+.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">3.1</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">3.2-dev</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
@@ -68,7 +72,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 <details class="fold" id="variationsFold" open>
 <summary>וריאציות לפי כלי</summary>
 <div class="fold-body">
- <div class="small">A–H לכל כלי · מעבר בתחילת התיבה הבאה</div>
+ <div class="small">A–H לכל כלי · לחיצה על ״1 תיבה״ להחלפת אורך · מעבר בתחילת מחזור</div>
  <div class="variations" id="variations" dir="ltr"></div>
  <div class="line"><span class="small" id="variationStatus">HH A · SN A · KD A</span><div style="display:flex;gap:6px;flex-wrap:wrap"><button id="randomize" title="בחירת שילוב אקראי של היי־האט, סנר ובס">🎲 רנדומייז</button><button id="copyVar" title="העתקת וריאציית כלי ליעד אחר באותו כלי">העתק כלי…</button></div></div>
 </div></details>
@@ -194,6 +198,18 @@ if(rhythmGrid==='triplet')instrumentBanks=tripletBanks;
 if(rhythmGrid==='triplet16')instrumentBanks=triplet16Banks;
 if(rhythmGrid==='mixed')instrumentBanks=mixedBanks;
 let selected=[0,0,0],pending=[null,null,null];
+const lengthKey='groove-lab-variation-lengths-v1';
+let variationLengths=Array.from({length:3},()=>Array(8).fill(1));
+try{const data=JSON.parse(localStorage.getItem(lengthKey));if(Array.isArray(data)&&data.length===3&&data.every(a=>Array.isArray(a)&&a.length===8))variationLengths=data.map(a=>a.map(n=>n===2?2:1))}catch(e){}
+const variationLength=(r,i=selected[r])=>variationLengths[r][i];
+const cycleBars=()=>selected.some((v,r)=>variationLength(r,v)===2)?2:1;
+function saveLengths(){try{localStorage.setItem(lengthKey,JSON.stringify(variationLengths))}catch(e){}}
+function toggleVariationLength(r,i){
+ variationLengths[r][i]=variationLengths[r][i]===2?1:2;saveLengths();
+ if(!running){paintVariations();seq();score()}
+ else{paintVariations();$('status').textContent='אורך הווריאציה עודכן; המחזור הבא ישתמש באורך החדש'}
+}
+
 let patterns=instrumentBanks.map((bank,r)=>bank[selected[r]]);
 function saveVariations(){try{if(rhythmGrid==='mixed')localStorage.setItem(mixedKey,JSON.stringify({banks:mixedBanks}));else localStorage.setItem(rhythmGrid==='triplet16'?triplet16Key:rhythmGrid==='triplet'?tripletKey:storageKey,JSON.stringify(instrumentBanks))}catch(e){}}
 function refreshPatterns(){patterns=instrumentBanks.map((bank,r)=>bank[selected[r]])}
@@ -203,10 +219,16 @@ function paintVariations(){
   const line=document.createElement('div');line.className='variation-row';
   const label=document.createElement('span');label.textContent=name;line.append(label);
   for(let i=0;i<8;i++){
-   const btn=document.createElement('button');btn.textContent='ABCDEFGH'[i];const detail=document.createElement('span');detail.className='vlabel';detail.textContent=instrumentLabels[r][i];btn.append(detail);
+   const cell=document.createElement('div');cell.className='variation-cell';
+   const btn=document.createElement('button');btn.className='variation-btn';btn.textContent='ABCDEFGH'[i];const detail=document.createElement('span');detail.className='vlabel';detail.textContent=instrumentLabels[r][i];btn.append(detail);
    btn.className=(i===selected[r]?'active ':'')+(i===pending[r]?'pending':'');
    btn.setAttribute('aria-label',name+' וריאציה '+'ABCDEFGH'[i]);
-   btn.onclick=()=>selectVariation(r,i);line.append(btn);
+   btn.onclick=()=>selectVariation(r,i);cell.append(btn);
+   const lengthBtn=document.createElement('button');lengthBtn.className='variation-length'+(variationLength(r,i)===2?' is-two':'');
+   lengthBtn.textContent=variationLength(r,i)+' תיבה'+(variationLength(r,i)===2?'ות':'');
+   lengthBtn.title='שנה אורך וריאציה '+names[r]+' '+ 'ABCDEFGH'[i];
+   lengthBtn.onclick=()=>toggleVariationLength(r,i);cell.append(lengthBtn);
+   line.append(cell);
   }
   host.append(line);
  });
@@ -272,14 +294,15 @@ function saveSnareDynamics(){try{if(rhythmGrid==='mixed')localStorage.setItem(mi
 function snareLevel(step){return snareDynamics[selected[1]][step]}
 function snareGain(step){return ({ghost:.24,normal:1,accent:1.38})[snareLevel(step)]||1}
 let editedSnareStep=null;
-function openSnareEditor(step){editedSnareStep=step;$('snareEditorTitle').textContent='סנר · צעד '+(step+1);$('snareEditor').hidden=false}
+let editedSnareBar=0;
+function openSnareEditor(step,bar=0){editedSnareStep=step;editedSnareBar=bar;$('snareEditorTitle').textContent='סנר · תיבה '+(bar+1)+' · צעד '+(step+1);$('snareEditor').hidden=false}
 function closeSnareEditor(){editedSnareStep=null;$('snareEditor').hidden=true}
 function assignSnareLevel(level){
  if(editedSnareStep===null)return;
  const step=editedSnareStep;
- if(level==='off')patterns[1][step]=false;
- else{patterns[1][step]=true;snareDynamics[selected[1]][step]=level}
- saveVariations();saveSnareDynamics();closeSnareEditor();seq();score();
+ if(level==='off')patternFor(1,editedSnareBar)[step]=false;
+ else{patternFor(1,editedSnareBar)[step]=true;snareRowAt(editedSnareBar)[step]=level}
+ saveVariations();saveSnareDynamics();saveSecond();closeSnareEditor();seq();score();
 }
 const hatKey='groove-lab-hihat-articulations-v1';
 const defaultHatStep=()=>({type:'closed',level:'normal'});
@@ -305,19 +328,52 @@ function saveHats(){try{if(rhythmGrid==='mixed')localStorage.setItem(mixedHatKey
 const currentHat=step=>hatBanks[selected[0]][step];
 const hatVelocity=step=>({soft:.38,normal:1,accent:1.35})[currentHat(step).level]||1;
 let editedHatStep=null;
+let editedHatBar=0;
 function paintHatEditor(){if(editedHatStep===null)return;
- const hit=currentHat(editedHatStep);
+ const hit=hatAt(editedHatStep,editedHatBar);
  $('hatEditor').querySelectorAll('[data-hat-type]').forEach(b=>b.classList.toggle('chosen',b.dataset.hatType===hit.type));
  $('hatEditor').querySelectorAll('[data-hat-level]').forEach(b=>b.classList.toggle('chosen',b.dataset.hatLevel===hit.level));
 }
-function openHatEditor(step){editedHatStep=step;$('hatEditorTitle').textContent='היי־האט · צעד '+(step+1);paintHatEditor();$('hatEditor').hidden=false}
+function openHatEditor(step,bar=0){editedHatStep=step;editedHatBar=bar;$('hatEditorTitle').textContent='היי־האט · תיבה '+(bar+1)+' · צעד '+(step+1);paintHatEditor();$('hatEditor').hidden=false}
 function closeHatEditor(){editedHatStep=null;$('hatEditor').hidden=true}
 function changeHat(kind,value){
  if(editedHatStep===null)return;
  const step=editedHatStep;
- currentHat(step)[kind]=value;patterns[0][step]=true;
- saveHats();saveVariations();paintHatEditor();seq();score();
+ hatAt(step,editedHatBar)[kind]=value;patternFor(0,editedHatBar)[step]=true;
+ saveHats();saveVariations();saveSecond();paintHatEditor();seq();score();
 }
+const secondBarKey='groove-lab-second-bar-data-v1';
+const secondBarData={};
+function newSecondForGrid(mode){
+ const size=mode==='mixed'?48:mode==='triplet16'?24:mode==='triplet'?12:16;
+ return {patterns:Array.from({length:3},()=>Array.from({length:8},()=>Array(size).fill(false))),
+  snare:Array.from({length:8},()=>Array(size).fill('normal')),
+  hats:Array.from({length:8},()=>Array.from({length:size},defaultHatStep)),initialized:Array.from({length:3},()=>Array(8).fill(false))};
+}
+try{const saved=JSON.parse(localStorage.getItem(secondBarKey));
+ if(saved&&typeof saved==='object')for(const mode of ['straight','triplet','triplet16','mixed']){
+  const d=saved[mode],size=mode==='mixed'?48:mode==='triplet16'?24:mode==='triplet'?12:16;
+  if(d?.patterns?.length===3&&d.patterns.every(bank=>bank.length===8&&bank.every(row=>row.length===size))&&d?.snare?.length===8&&d.snare.every(row=>row.length===size)&&d?.hats?.length===8&&d.hats.every(row=>row.length===size)&&d?.initialized?.length===3)secondBarData[mode]=d;
+ }}catch(e){}
+function secondData(){return secondBarData[rhythmGrid]??(secondBarData[rhythmGrid]=newSecondForGrid(rhythmGrid))}
+function saveSecond(){try{localStorage.setItem(secondBarKey,JSON.stringify(secondBarData))}catch(e){}}
+function ensureSecond(r,i){
+ const d=secondData();if(d.initialized[r][i])return;
+ d.patterns[r][i]=instrumentBanks[r][i].slice();
+ if(r===1)d.snare[i]=snareDynamics[i].slice();
+ if(r===0)d.hats[i]=hatBanks[i].map(x=>({...x}));
+ d.initialized[r][i]=true;saveSecond();
+}
+function patternFor(r,bar=0,i=selected[r]){
+ if(bar===0||variationLength(r,i)===1)return instrumentBanks[r][i];
+ ensureSecond(r,i);return secondData().patterns[r][i];
+}
+function barPatterns(bar=0){return [0,1,2].map(r=>patternFor(r,bar))}
+function snareLevelAt(step,bar=0){return bar===1&&variationLength(1)===2?(ensureSecond(1,selected[1]),secondData().snare[selected[1]][step]):snareDynamics[selected[1]][step]}
+function hatAt(step,bar=0){return bar===1&&variationLength(0)===2?(ensureSecond(0,selected[0]),secondData().hats[selected[0]][step]):hatBanks[selected[0]][step]}
+function snareRowAt(bar=0){return bar===1&&variationLength(1)===2?(ensureSecond(1,selected[1]),secondData().snare[selected[1]]):snareDynamics[selected[1]]}
+function hatRowAt(bar=0){return bar===1&&variationLength(0)===2?(ensureSecond(0,selected[0]),secondData().hats[selected[0]]):hatBanks[selected[0]]}
+let playingBar=0,shownBar=0;
 let ctx,bus,running=false,timer=null,position=0,next=0,rev=0,shownStep=-1,scorePositions=[],scoreCursor=null;
 function seq(){
  const host=$('seq');host.replaceChildren();
