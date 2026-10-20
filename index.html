@@ -917,8 +917,11 @@ function sampleHit(key,time,kit,velocity=1,registerHat=false){
 }
 let activeOpenHats=[];
 function chokeHats(time){
+ // WebAudio events are scheduled ahead: close only voices that began before
+ // this instant, and fade their existing sample/synth gains at the exact time.
  activeOpenHats=activeOpenHats.filter(h=>{
-  if(h.time>time)return true;
+  if(h.time>=time)return true;
+  h.gain.cancelScheduledValues(time);
   h.gain.setTargetAtTime(.0001,time,.009);
   return false;
  });
@@ -953,8 +956,9 @@ function sound(i,t,bar=playingBar){
   const sample=kit!=='synth';
   if(!trackMuted[0]&&patterns[0][i]){
    const hh=currentHat(i),open=hh.type==='open'||hh.type==='half',velocity=hatVelocity(i);
-   // Closed stick and pedal shut an earlier ringing open-hat.
-   if(!open)chokeHats(t);
+   // A new stick/pedal articulation replaces the previous ringing open hat.
+   // This also avoids stacking two open samples when a phrase repeats.
+   chokeHats(t);
    const key=kit==='acoustic'?({closed:'hh',half:'hhHalf',open:'hhOpen',pedal:'hhPedal'})[hh.type]:'hh';
    const played=sample&&sampleHit(key,t,kit,velocity,open);
    if(!played)syntheticHat(t,hh.type,velocity);
@@ -998,6 +1002,9 @@ function tick(){
   // Keep a single continuous 1- or 2-bar cycle, without restarting AudioContext.
   if(i===0&&playingBar===0){applyQueuedBeatDivisions();applyPendingVariations();}
   const bar=playingBar;
+  // At the end of a full two-bar phrase, close the previous open hat even if
+  // the new phrase begins with silence (so no new closed HH would choke it).
+  if(cycleBars()===2&&bar===0&&i===0)chokeHats(t);
   sound(i,t,bar);
   setTimeout(()=>{if(running&&rev===revision){
    mark(i,bar);$('status').textContent='תיבה '+(bar+1)+' · פעמה '+(getStepBeat(i)+1)
