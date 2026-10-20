@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html data-one-drop-release="update-check-1" lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>One Drop — Groove Lab</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
@@ -85,6 +85,34 @@ button.active,.hat-choice-row button.chosen{background:#d2ae46;color:#111;border
 </style>
 <main>
 <header class="reggae-header"><div><div class="reggae-eyebrow">GROOVE LAB / REGGAE SERIES · MACHINE 01</div><h1>One Drop <span class="reggae-tag">ROOTS REGGAE</span></h1><div class="reggae-subtitle">מכונת לימוד רגאיי · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
+
+<!-- One Drop: unobtrusive update check, no interruption to playback -->
+<style>
+#updateNotice{position:sticky;top:6px;z-index:15;display:none;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;margin:6px 0;background:#192b1b;border:1px solid #d5ae42;border-radius:9px;font-size:13px}
+#updateNotice button{background:#d5ae42;color:#111;font-weight:700;white-space:nowrap}
+</style>
+<div id="updateNotice" role="status"><span>יש גרסה חדשה של One Drop</span><button id="applyUpdate" type="button">עדכן עכשיו</button></div>
+<script>
+(()=> {
+const initial=document.documentElement.getAttribute('data-one-drop-release');
+const notice=document.getElementById('updateNotice');
+const button=document.getElementById('applyUpdate');
+button.addEventListener('click',()=>{const url=new URL(location.href);url.searchParams.set('updated',Date.now().toString());location.replace(url.toString())});
+async function check(){
+ if(document.visibilityState==='hidden')return;
+ try{
+  const response=await fetch('./one-drop.html?check='+Date.now(),{cache:'no-store'});
+  if(!response.ok)return;
+  const text=await response.text();
+  const version=text.match(/<html[^>]*data-one-drop-release="([^"]+)"/)?.[1];
+  if(version&&version!==initial)notice.style.display='flex';
+ }catch(_){}
+}
+window.addEventListener('focus',check);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')check()});
+setInterval(check,30000);
+})();
+</script>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
