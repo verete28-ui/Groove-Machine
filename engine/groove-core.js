@@ -1,5 +1,7 @@
 (()=>{
 const $=id=>document.getElementById(id);
+const machineConfig=window.GROOVE_MACHINE||null;
+const storagePrefix=machineConfig?.storagePrefix||'groove-lab';
 const base=()=>[Array.from({length:16},(_,i)=>i%2===0),Array.from({length:16},(_,i)=>i===4||i===12),Array.from({length:16},(_,i)=>i===0||i===8)];
 const clone=p=>p.map(row=>row.slice());
 const defaults=[base(),
@@ -8,43 +10,45 @@ const defaults=[base(),
  [Array.from({length:16},(_,i)=>i%2===0),Array.from({length:16},(_,i)=>[4,12,14,15].includes(i)),Array.from({length:16},(_,i)=>i===0||i===8)]];
 // Each instrument has four deliberately distinct teaching patterns.
 const make=indices=>Array.from({length:16},(_,i)=>indices.includes(i));
-const instrumentLabels=[
+const baseInstrumentLabels=[
  ['שמיניות','רבעים','16יות','אוף־ביט','דליל','דילוגים','שלשות','הדגשות'],
  ['2 ו־4','חצי־זמן','סינקופה','פיל','בלי 4','אוף־ביט','רולים','מענה'],
  ['1 ו־3','סינקופה','ארבע פעימות','שבירות','1 בלבד','דאבלים','אוף־ביט','דחיפות']
 ];
+const instrumentLabels=machineConfig?.labels||baseInstrumentLabels;
 const newDefaults=[
  [make([0,2,4,6,8,10,12,14]),make([0,4,8,12]),make([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]),make([2,6,10,14])],
  [make([4,12]),make([8]),make([4,11,12,15]),make([4,12,14,15])],
  [make([0,8]),make([0,6,10]),make([0,4,8,12]),make([0,7,11,14])]
 ];
-const extendedDefaults=[
+const baseExtendedDefaults=[
  [...newDefaults[0],make([0,4,8,14]),make([0,3,6,8,11,14]),make([0,2,5,8,10,13]),make([0,1,4,6,8,9,12,14])],
  [...newDefaults[1],make([4]),make([2,6,10,14]),make([4,7,12,13,14,15]),make([4,10,12])],
  [...newDefaults[2],make([0]),make([0,1,8,9]),make([2,6,10,14]),make([0,3,8,11,15])]
 ];
-const gridKey='groove-lab-rhythm-grid-v1';
+const extendedDefaults=machineConfig?.presets||baseExtendedDefaults;
+const gridKey=(storagePrefix+'-rhythm-grid-v1');
 let rhythmGrid='straight';
 try{const saved=localStorage.getItem(gridKey);if(saved==='triplet'||saved==='triplet16'||saved==='mixed')rhythmGrid=saved}catch(e){}
 $('rhythmGrid').value=rhythmGrid;
-const mixedBeatKey='groove-lab-mixed-beats-v1';
+const mixedBeatKey=(storagePrefix+'-mixed-beats-v1');
 let mixedBeats=[4,3,4,6];
 try{const saved=JSON.parse(localStorage.getItem(mixedBeatKey));if(Array.isArray(saved)&&saved.length===4&&saved.every(n=>[3,4,6].includes(n)))mixedBeats=saved}catch(e){}
 const stepCount=()=>rhythmGrid==='mixed'?48:rhythmGrid==='triplet16'?24:rhythmGrid==='triplet'?12:16;
 const beatStarts=()=>[0,12,24,36];
 function getStepBeat(i){return rhythmGrid==='mixed'?Math.floor(i/12):Math.floor(i/subdivisions())};
 const subdivisions=()=>rhythmGrid==='triplet16'?6:rhythmGrid==='triplet'?3:4;
-const tripletKey='groove-lab-triplet-patterns-v1';
+const tripletKey=(storagePrefix+'-triplet-patterns-v1');
 // Triplet presets are stored separately: the original 16-step banks remain untouched.
 const toTripletRow=row=>Array.from({length:12},(_,i)=>Boolean(row[Math.floor(i/3)*4+Math.round(i%3*1.5)]));
 const tripletDefaults=extendedDefaults.map(bank=>bank.map(toTripletRow));
 let tripletBanks=tripletDefaults.map(bank=>bank.map(row=>row.slice()));
 try{const saved=JSON.parse(localStorage.getItem(tripletKey));if(Array.isArray(saved)&&saved.length===3&&saved.every(bank=>Array.isArray(bank)&&bank.length===8&&bank.every(row=>Array.isArray(row)&&row.length===12)))tripletBanks=saved.map(bank=>bank.map(row=>row.map(Boolean)))}catch(e){}
-const triplet16Key='groove-lab-triplet16-patterns-v1';
+const triplet16Key=(storagePrefix+'-triplet16-patterns-v1');
 const triplet16Defaults=tripletDefaults.map(bank=>bank.map(row=>Array.from({length:24},(_,i)=>i%2===0?row[i/2]:false)));
 let triplet16Banks=triplet16Defaults.map(bank=>bank.map(row=>row.slice()));
 try{const saved=JSON.parse(localStorage.getItem(triplet16Key));if(Array.isArray(saved)&&saved.length===3&&saved.every(bank=>Array.isArray(bank)&&bank.length===8&&bank.every(row=>Array.isArray(row)&&row.length===24)))triplet16Banks=saved.map(bank=>bank.map(row=>row.map(Boolean)))}catch(e){}
-const mixedKey='groove-lab-mixed-patterns-v2';
+const mixedKey=(storagePrefix+'-mixed-patterns-v2');
 const offsets=n=>Array.from({length:n},(_,i)=>i*12/n);
 const stepCountForMixed=()=>48;
 const expandMixed=(row,divisions,convert,defaultValue)=>{const out=Array.from({length:48},()=>defaultValue());let p=0;
@@ -53,13 +57,13 @@ const makeMixedDefaults=()=>extendedDefaults.map(bank=>bank.map(row=>Array.from(
 let mixedDefaults=makeMixedDefaults(),mixedBanks=mixedDefaults.map(bank=>bank.map(row=>row.slice()));
 try{const saved=JSON.parse(localStorage.getItem(mixedKey));
  if(saved?.banks?.length===3&&saved.banks.every(bank=>bank.length===8&&bank.every(row=>row.length===48)))mixedBanks=saved.banks;
- else{const old=JSON.parse(localStorage.getItem('groove-lab-mixed-patterns-v1'));
+ else{const old=JSON.parse(localStorage.getItem((storagePrefix+'-mixed-patterns-v1')));
   if(old?.divisions?.length===4&&old?.banks?.length===3)mixedBanks=old.banks.map(bank=>bank.map(row=>expandMixed(row,old.divisions,Boolean,()=>false)))}
 }catch(e){}
-const storageKey='groove-lab-per-instrument-v3';
-const priorV2Key='groove-lab-per-instrument-v2';
-const previousKey='groove-lab-per-instrument-v1';
-const oldStorageKey='groove-lab-variations-v1';
+const storageKey=(storagePrefix+'-per-instrument-v3');
+const priorV2Key=(storagePrefix+'-per-instrument-v2');
+const previousKey=(storagePrefix+'-per-instrument-v1');
+const oldStorageKey=(storagePrefix+'-variations-v1');
 // Existing custom edits survive; unedited former presets receive the new patterns.
 const previousDefaults=Array.from({length:3},(_,r)=>defaults.map(v=>v[r]));
 let instrumentBanks=extendedDefaults.map(bank=>bank.map(row=>row.slice()));
@@ -144,26 +148,26 @@ function applyPendingVariations(){
 }
 
 const names=['HH','SN','KD'];
-const muteStorageKey='groove-lab-track-mutes-v1';
+const muteStorageKey=(storagePrefix+'-track-mutes-v1');
 let trackMuted=[false,false,false];
 try{const saved=JSON.parse(localStorage.getItem(muteStorageKey));if(Array.isArray(saved)&&saved.length===3)trackMuted=saved.map(Boolean)}catch(e){}
 function setTrackMute(r){trackMuted[r]=!trackMuted[r];try{localStorage.setItem(muteStorageKey,JSON.stringify(trackMuted))}catch(e){};seq()}
-const dynamicsKey='groove-lab-snare-dynamics-v1';
+const dynamicsKey=(storagePrefix+'-snare-dynamics-v1');
 let snareDynamics=Array.from({length:8},()=>Array(16).fill('normal'));
 try{const saved=JSON.parse(localStorage.getItem(dynamicsKey));if(Array.isArray(saved)&&saved.length===8&&saved.every(row=>Array.isArray(row)&&row.length===16)){snareDynamics=saved.map(row=>row.map(v=>['ghost','normal','accent'].includes(v)?v:'normal'))}}catch(e){}
-const tripletDynamicsKey='groove-lab-triplet-snare-dynamics-v1';
+const tripletDynamicsKey=(storagePrefix+'-triplet-snare-dynamics-v1');
 let tripletSnareDynamics=Array.from({length:8},()=>Array(12).fill('normal'));
 try{const saved=JSON.parse(localStorage.getItem(tripletDynamicsKey));if(Array.isArray(saved)&&saved.length===8&&saved.every(row=>Array.isArray(row)&&row.length===12))tripletSnareDynamics=saved.map(row=>row.map(v=>['ghost','normal','accent'].includes(v)?v:'normal'))}catch(e){}
 let straightSnareDynamics=snareDynamics;
-const triplet16DynamicsKey='groove-lab-triplet16-snare-dynamics-v1';
+const triplet16DynamicsKey=(storagePrefix+'-triplet16-snare-dynamics-v1');
 let triplet16SnareDynamics=Array.from({length:8},()=>Array(24).fill('normal'));
 try{const saved=JSON.parse(localStorage.getItem(triplet16DynamicsKey));if(Array.isArray(saved)&&saved.length===8&&saved.every(row=>Array.isArray(row)&&row.length===24))triplet16SnareDynamics=saved.map(row=>row.map(v=>['ghost','normal','accent'].includes(v)?v:'normal'))}catch(e){}
 if(rhythmGrid==='triplet')snareDynamics=tripletSnareDynamics;
 if(rhythmGrid==='triplet16')snareDynamics=triplet16SnareDynamics;
-const mixedDynamicsKey='groove-lab-mixed-snare-v2';
+const mixedDynamicsKey=(storagePrefix+'-mixed-snare-v2');
 let mixedSnareDynamics=Array.from({length:8},()=>Array(48).fill('normal'));
 try{const saved=JSON.parse(localStorage.getItem(mixedDynamicsKey));if(saved?.length===8&&saved.every(row=>row.length===48))mixedSnareDynamics=saved;
- else{const old=JSON.parse(localStorage.getItem('groove-lab-mixed-snare-v1'));
+ else{const old=JSON.parse(localStorage.getItem((storagePrefix+'-mixed-snare-v1')));
  if(old?.divisions?.length===4&&old?.banks?.length===8)mixedSnareDynamics=old.banks.map(row=>expandMixed(row,old.divisions,v=>v||'normal',()=> 'normal'))}
 }catch(e){}
 if(rhythmGrid==='mixed')snareDynamics=mixedSnareDynamics;
@@ -180,23 +184,23 @@ function assignSnareLevel(level){
  else{patterns[1][step]=true;snareDynamics[selected[1]][step]=level}
  saveVariations();saveSnareDynamics();closeSnareEditor();seq();score();
 }
-const hatKey='groove-lab-hihat-articulations-v1';
+const hatKey=(storagePrefix+'-hihat-articulations-v1');
 const defaultHatStep=()=>({type:'closed',level:'normal'});
 let hatBanks=Array.from({length:8},()=>Array.from({length:16},defaultHatStep));
 try{const saved=JSON.parse(localStorage.getItem(hatKey));if(Array.isArray(saved)&&saved.length===8&&saved.every(row=>Array.isArray(row)&&row.length===16))hatBanks=saved.map(row=>row.map(v=>({type:['closed','half','open','pedal'].includes(v?.type)?v.type:'closed',level:['soft','normal','accent'].includes(v?.level)?v.level:'normal'})))}catch(e){}
-const tripletHatKey='groove-lab-triplet-hihat-articulations-v1';
+const tripletHatKey=(storagePrefix+'-triplet-hihat-articulations-v1');
 let tripletHatBanks=Array.from({length:8},()=>Array.from({length:12},defaultHatStep));
 try{const saved=JSON.parse(localStorage.getItem(tripletHatKey));if(Array.isArray(saved)&&saved.length===8&&saved.every(row=>Array.isArray(row)&&row.length===12))tripletHatBanks=saved.map(row=>row.map(v=>({type:['closed','half','open','pedal'].includes(v?.type)?v.type:'closed',level:['soft','normal','accent'].includes(v?.level)?v.level:'normal'})))}catch(e){}
 let straightHatBanks=hatBanks;
-const triplet16HatKey='groove-lab-triplet16-hihat-articulations-v1';
+const triplet16HatKey=(storagePrefix+'-triplet16-hihat-articulations-v1');
 let triplet16HatBanks=Array.from({length:8},()=>Array.from({length:24},defaultHatStep));
 try{const saved=JSON.parse(localStorage.getItem(triplet16HatKey));if(Array.isArray(saved)&&saved.length===8&&saved.every(row=>Array.isArray(row)&&row.length===24))triplet16HatBanks=saved.map(row=>row.map(v=>({type:['closed','half','open','pedal'].includes(v?.type)?v.type:'closed',level:['soft','normal','accent'].includes(v?.level)?v.level:'normal'})))}catch(e){}
 if(rhythmGrid==='triplet')hatBanks=tripletHatBanks;
 if(rhythmGrid==='triplet16')hatBanks=triplet16HatBanks;
-const mixedHatKey='groove-lab-mixed-hats-v2';
+const mixedHatKey=(storagePrefix+'-mixed-hats-v2');
 let mixedHatBanks=Array.from({length:8},()=>Array.from({length:48},defaultHatStep));
 try{const saved=JSON.parse(localStorage.getItem(mixedHatKey));if(saved?.length===8&&saved.every(row=>row.length===48))mixedHatBanks=saved;
- else{const old=JSON.parse(localStorage.getItem('groove-lab-mixed-hats-v1'));
+ else{const old=JSON.parse(localStorage.getItem((storagePrefix+'-mixed-hats-v1')));
  if(old?.divisions?.length===4&&old?.banks?.length===8)mixedHatBanks=old.banks.map(row=>expandMixed(row,old.divisions,v=>({...v}),defaultHatStep))}
 }catch(e){}
 if(rhythmGrid==='mixed')hatBanks=mixedHatBanks;
@@ -625,7 +629,7 @@ const sampleSets={
 };
 const sampleBuffers={};
 const samplePromises={};
-const sampleKey='groove-lab-sound-kit-v1';
+const sampleKey=(storagePrefix+'-sound-kit-v1');
 try{const stored=localStorage.getItem(sampleKey);if(['studio','dub','synth','acoustic'].includes(stored))$('soundKit').value=stored;else $('soundKit').value='acoustic'}catch(e){$('soundKit').value='acoustic'}
 function chosenSet(kit){return kit==='acoustic'?'acoustic':'studio'}
 function isReady(kit){const buffers=sampleBuffers[chosenSet(kit)];return buffers&&['hh','sn','kd'].every(k=>buffers[k]?.length)}
@@ -810,11 +814,11 @@ function applyBeatDivision(beat,division){
   // Keep a backup of the previous mixed work when entering it from another mode.
   try{
    const prior=localStorage.getItem(mixedKey);
-   if(prior)localStorage.setItem('groove-lab-mixed-patterns-backup-v1',prior);
+   if(prior)localStorage.setItem((storagePrefix+'-mixed-patterns-backup-v1'),prior);
    const priorSnare=localStorage.getItem(mixedDynamicsKey);
-   if(priorSnare)localStorage.setItem('groove-lab-mixed-snare-backup-v1',priorSnare);
+   if(priorSnare)localStorage.setItem((storagePrefix+'-mixed-snare-backup-v1'),priorSnare);
    const priorHat=localStorage.getItem(mixedHatKey);
-   if(priorHat)localStorage.setItem('groove-lab-mixed-hats-backup-v1',priorHat);
+   if(priorHat)localStorage.setItem((storagePrefix+'-mixed-hats-backup-v1'),priorHat);
   }catch(e){}
   mixedBanks=sourceBanks.map(bank=>bank.map(expand));
   mixedSnareDynamics=sourceSnare.map(expandLevel);
@@ -836,10 +840,10 @@ function updateClickSummary(){
 $('metro').onchange=updateClickSummary;
 $('clickDivision').onchange=updateClickSummary;
 $('clickVolume').oninput=()=>{$('clickVolumeOut').textContent=$('clickVolume').value+'%'};
-const drumsKey='groove-lab-drums-enabled-v1';
+const drumsKey=(storagePrefix+'-drums-enabled-v1');
 try {const setting=localStorage.getItem(drumsKey);if(setting!==null)$('drumsEnabled').checked=setting==='true'}catch(e){}
 $('drumsEnabled').onchange=()=>{try{localStorage.setItem(drumsKey,String($('drumsEnabled').checked))}catch(e){}};
-const foldKey='groove-lab-panel-state-v1';
+const foldKey=(storagePrefix+'-panel-state-v1');
 const folds=['settingsFold','clickFold','variationsFold','practiceFold'];
 try{const states=JSON.parse(localStorage.getItem(foldKey));if(states&&typeof states==='object')folds.forEach(id=>{if(typeof states[id]==='boolean')$(id).open=states[id]})}catch(e){}
 folds.forEach(id=>$(id).addEventListener('toggle',()=>{try{localStorage.setItem(foldKey,JSON.stringify(Object.fromEntries(folds.map(k=>[k,$(k).open]))))}catch(e){}}));
