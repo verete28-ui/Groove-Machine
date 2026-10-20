@@ -47,7 +47,12 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .beats{display:grid;grid-template-columns:71px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
 .score-bar-panel{border:1px solid #71818a;border-radius:9px;padding:5px;margin-bottom:10px;overflow:hidden}.score-bar-panel.is-active{border:2px solid #25b5cf}.score-bar-heading{direction:rtl;font-size:12px;font-weight:700;margin:0 3px 3px;color:#394854}
 #score{direction:ltr;overflow:hidden;background:#fff;color:#17212a;border-radius:8px;min-height:0;width:100%}#score svg{display:block;width:100%;height:auto;max-width:100%}
-.variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variation-length{padding:3px 4px;min-height:27px;border-radius:5px;font-size:11px;background:#354856;border:1px solid #607e89;color:#ecf4f6}.variation-length.is-two{background:#086579;border-color:#2bb5cc}.variation-cell{display:flex;flex-direction:column;gap:3px;min-width:0}.variation-cell>.variation-btn{min-height:40px;padding:5px 2px}
+.variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variation-cell{min-width:0}.variation-cell>.variation-btn{width:100%;min-height:53px;padding:7px 2px;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.variation-cell .variation-marker{display:block;font-size:11px;line-height:13px;font-weight:700;opacity:.9;margin-top:3px}
+#lengthEditor{position:fixed;inset:0;background:#000a;z-index:25;display:flex;justify-content:center;align-items:center;padding:16px}
+#lengthEditor[hidden]{display:none}
+#lengthEditor .editor-content{background:#20323e;border:1px solid #628096;border-radius:14px;width:min(330px,100%);padding:16px;display:grid;gap:10px}
+#lengthEditor .choice{width:100%;text-align:right}.choice.is-selected{background:#087d9a;border-color:#44c5d9}
 .bar-panel{border:1px solid #54707d;border-radius:10px;padding:7px 5px;margin:8px 0;min-width:0}.bar-panel.is-active{border:2px solid #2bb5cc;background:#19333d}.bar-panel .track{margin:10px 0}
 .bar-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin:3px 0 7px}
 .bar-head .repeat-label{font-size:11px;color:#acc2ce}.bar-panel .beat-controls{margin-top:4px}
@@ -76,10 +81,19 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 <details class="fold" id="variationsFold" open>
 <summary>וריאציות לפי כלי</summary>
 <div class="fold-body">
- <div class="small">A–H לכל כלי · לחיצה על ״1 תיבה״ להחלפת אורך · מעבר בתחילת מחזור</div>
+ <div class="small">A–H לכל כלי · לחיצה רגילה לבחירה, ארוכה לשינוי אורך · Ⅰ תיבה אחת / Ⅱ שתי תיבות</div>
  <div class="variations" id="variations" dir="ltr"></div>
  <div class="line"><span class="small" id="variationStatus">HH A · SN A · KD A</span><div style="display:flex;gap:6px;flex-wrap:wrap"><button id="randomize" title="בחירת שילוב אקראי של היי־האט, סנר ובס">🎲 רנדומייז</button><button id="copyVar" title="העתקת וריאציית כלי ליעד אחר באותו כלי">העתק כלי…</button></div></div>
 </div></details>
+<div id="lengthEditor" hidden role="dialog" aria-modal="true" aria-labelledby="lengthEditorTitle">
+ <div class="editor-content">
+  <strong id="lengthEditorTitle">אורך וריאציה</strong>
+  <span class="small">בחר את אורך הווריאציה. שינוי זה לא מוחק את התיבה השנייה.</span>
+  <button class="choice" data-var-length="1">Ⅰ · תיבה אחת</button>
+  <button class="choice" data-var-length="2">Ⅱ · שתי תיבות</button>
+  <button id="lengthEditorClose">סגור</button>
+ </div>
+</div>
 <details class="fold" id="practiceFold" open><summary>🥁 תרגול — סיקוונסר / תווים</summary><div class="fold-body">
 <div class="line" style="margin:0 0 12px 0"><span class="small">סאונד התופים</span><label class="small" style="display:flex;align-items:center;gap:7px"><input type="checkbox" id="drumsEnabled" checked> 🔊 הפעל תופים</label></div>
 <div class="tabs"><button class="active" data-view="seq">סיקוונסר</button><button data-view="score">תווים</button></div>
@@ -222,6 +236,20 @@ function toggleVariationLength(r,i){
 let patterns=instrumentBanks.map((bank,r)=>bank[selected[r]]);
 function saveVariations(){try{if(rhythmGrid==='mixed')localStorage.setItem(mixedKey,JSON.stringify({banks:mixedBanks}));else localStorage.setItem(rhythmGrid==='triplet16'?triplet16Key:rhythmGrid==='triplet'?tripletKey:storageKey,JSON.stringify(instrumentBanks))}catch(e){}}
 function refreshPatterns(){patterns=instrumentBanks.map((bank,r)=>bank[selected[r]])}
+let editingVariation=null;
+function closeLengthEditor(){editingVariation=null;$('lengthEditor').hidden=true}
+function openLengthEditor(r,i){
+ editingVariation={r,i};
+ $('lengthEditorTitle').textContent='אורך וריאציה '+names[r]+' '+ 'ABCDEFGH'[i];
+ $('lengthEditor').querySelectorAll('[data-var-length]').forEach(b=>b.classList.toggle('is-selected',Number(b.dataset.varLength)===variationLength(r,i)));
+ $('lengthEditor').hidden=false;
+}
+function setEditedLength(n){
+ if(!editingVariation||![1,2].includes(n))return;
+ const {r,i}=editingVariation;
+ if(variationLength(r,i)!==n)toggleVariationLength(r,i);
+ closeLengthEditor();paintVariations();
+}
 function paintVariations(){
  const host=$('variations');host.replaceChildren();
  ['HH','SN','KD'].forEach((name,r)=>{
@@ -229,15 +257,27 @@ function paintVariations(){
   const label=document.createElement('span');label.textContent=name;line.append(label);
   for(let i=0;i<8;i++){
    const cell=document.createElement('div');cell.className='variation-cell';
-   const btn=document.createElement('button');btn.className='variation-btn';btn.textContent='ABCDEFGH'[i];const detail=document.createElement('span');detail.className='vlabel';detail.textContent=instrumentLabels[r][i];btn.append(detail);
-   btn.className=(i===selected[r]?'active ':'')+(i===pending[r]?'pending':'');
-   btn.setAttribute('aria-label',name+' וריאציה '+'ABCDEFGH'[i]);
-   btn.onclick=()=>selectVariation(r,i);cell.append(btn);
-   const lengthBtn=document.createElement('button');lengthBtn.className='variation-length'+(variationLength(r,i)===2?' is-two':'');
-   lengthBtn.textContent=variationLength(r,i)+' תיבה'+(variationLength(r,i)===2?'ות':'');
-   lengthBtn.title='שנה אורך וריאציה '+names[r]+' '+ 'ABCDEFGH'[i];
-   lengthBtn.onclick=()=>toggleVariationLength(r,i);cell.append(lengthBtn);
-   line.append(cell);
+   const btn=document.createElement('button');btn.className='variation-btn';
+   btn.textContent='ABCDEFGH'[i];
+   const detail=document.createElement('span');detail.className='vlabel';detail.textContent=instrumentLabels[r][i];btn.append(detail);
+   const marker=document.createElement('span');marker.className='variation-marker';
+   marker.textContent=variationLength(r,i)===2?'Ⅱ':'Ⅰ';btn.append(marker);
+   btn.className='variation-btn '+(i===selected[r]?'active ':'')+(i===pending[r]?'pending':'');
+   btn.title=name+' '+ 'ABCDEFGH'[i]+' · '+variationLength(r,i)+' תיבות · לחיצה ארוכה לשינוי אורך';
+   btn.setAttribute('aria-label',name+' וריאציה '+'ABCDEFGH'[i]+' · '+(variationLength(r,i)===2?'שתי תיבות':'תיבה אחת')+' · לחיצה ארוכה לעריכה');
+   let longTimer=null,suppressClick=false;
+   const cancelLong=()=>{if(longTimer!==null){clearTimeout(longTimer);longTimer=null}};
+   btn.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;
+    suppressClick=false;cancelLong();
+    longTimer=setTimeout(()=>{longTimer=null;suppressClick=true;openLengthEditor(r,i)},520);
+   });
+   btn.addEventListener('pointerup',cancelLong);
+   btn.addEventListener('pointercancel',cancelLong);
+   btn.addEventListener('pointerleave',cancelLong);
+   btn.addEventListener('contextmenu',e=>{e.preventDefault();cancelLong();suppressClick=true;openLengthEditor(r,i)});
+   btn.onclick=()=>{if(suppressClick){suppressClick=false;return}selectVariation(r,i)};
+   cell.append(btn);line.append(cell);
   }
   host.append(line);
  });
@@ -1146,7 +1186,10 @@ $('hatEditor').onclick=e=>{if(e.target===$('hatEditor'))closeHatEditor()};
 $('snareEditor').querySelectorAll('[data-snare-level]').forEach(b=>b.onclick=()=>assignSnareLevel(b.dataset.snareLevel));
 $('closeSnareEditor').onclick=closeSnareEditor;
 $('snareEditor').onclick=e=>{if(e.target===$('snareEditor'))closeSnareEditor()};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('snareEditor').hidden)closeSnareEditor();if(!$('hatEditor').hidden)closeHatEditor()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('snareEditor').hidden)closeSnareEditor();if(!$('hatEditor').hidden)closeHatEditor();if(!$('lengthEditor').hidden)closeLengthEditor()}});
+$('lengthEditor').querySelectorAll('[data-var-length]').forEach(b=>b.onclick=()=>setEditedLength(Number(b.dataset.varLength)));
+$('lengthEditorClose').onclick=closeLengthEditor;
+$('lengthEditor').onclick=e=>{if(e.target===$('lengthEditor'))closeLengthEditor()};
 paintVariations();seq();window.addEventListener('load',score);
 })();
 </script><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת.</p></main></html>
