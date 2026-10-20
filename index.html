@@ -1008,26 +1008,31 @@ function applyQueuedBeatDivisions(){
  const changes=Object.entries(queuedBeatDivisions);
  if(!changes.length)return;
  queuedBeatDivisions={};
- changes.forEach(([beat,division])=>applyBeatDivision(Number(beat),division));
+ changes.forEach(([key,division])=>{
+  const [bar,beat]=key.split(':').map(Number);
+  applyBeatDivision(beat,division,bar);
+ });
 }
-function changeBeatDivision(beat,division){
+function changeBeatDivision(beat,division,bar=0){
  if(![3,4,6].includes(division)||beat<0||beat>3)return;
  if(running){
-  queuedBeatDivisions[beat]=division;
+  queuedBeatDivisions[bar+':'+beat]=division;
   $('status').textContent='שינוי החלוקה ייכנס בתחילת התיבה הבאה';
   seq();
   return;
  }
- applyBeatDivision(beat,division);
+ applyBeatDivision(beat,division,bar);
 }
-function applyBeatDivision(beat,division){
+function applyBeatDivision(beat,division,bar=0){
  if(![3,4,6].includes(division)||beat<0||beat>3)return;
- if(rhythmGrid==='mixed'&&mixedBeats[beat]===division)return;
+ if(rhythmGrid==='mixed'&&beatDivisionsForBar(bar)[beat]===division)return;
  if(rhythmGrid!=='mixed'){
   // Preserve every other beat exactly as it appears in the current uniform grid.
   // Transfer ALL instrument variations, snare dynamics and hat articulations
   // into absolute 48-tick positions before changing the requested beat.
   const formerDivision=subdivisions();
+  const oldMode=rhythmGrid;
+  const oldSecond=secondData();
   const sourceBanks=instrumentBanks,sourceSnare=snareDynamics,sourceHats=hatBanks;
   const ticksForSource=Array.from({length:4},(_,b)=>offsets(formerDivision).map(t=>b*12+t)).flat();
   const expand=row=>Array.from({length:48},(_,tick)=>{
@@ -1054,13 +1059,32 @@ function applyBeatDivision(beat,division){
   mixedBanks=sourceBanks.map(bank=>bank.map(expand));
   mixedSnareDynamics=sourceSnare.map(expandLevel);
   mixedHatBanks=sourceHats.map(expandHat);
+  // Transfer second-bar edits as well, retaining independent per-variation lengths.
+  const convertedSecond=newSecondForGrid('mixed');
+  for(let r=0;r<3;r++)for(let i=0;i<8;i++)if(oldSecond.initialized[r][i]){
+   convertedSecond.patterns[r][i]=expand(oldSecond.patterns[r][i]);
+   convertedSecond.initialized[r][i]=true;
+   if(r===1)convertedSecond.snare[i]=expandLevel(oldSecond.snare[i]);
+   if(r===0)convertedSecond.hats[i]=oldSecond.hats[i].length?Array.from({length:48},(_,tick)=>{
+    const sourceIndex=ticksForSource.indexOf(tick);
+    return sourceIndex>=0?{...(oldSecond.hats[i][sourceIndex]||defaultHatStep())}:defaultHatStep();
+   }):Array.from({length:48},defaultHatStep);
+  }
+  secondBarData.mixed=convertedSecond;saveSecond();
   mixedBeats=Array(4).fill(formerDivision);
+  secondMixedBeats=Array(4).fill(formerDivision);
+  try{localStorage.setItem(secondBeatKey,JSON.stringify(secondMixedBeats))}catch(e){} 
   rhythmGrid='mixed';$('rhythmGrid').value='mixed';
   instrumentBanks=mixedBanks;snareDynamics=mixedSnareDynamics;hatBanks=mixedHatBanks;
   try{localStorage.setItem(gridKey,'mixed')}catch(e){}
  }
- mixedBeats[beat]=division;
- try{localStorage.setItem(mixedBeatKey,JSON.stringify(mixedBeats))}catch(e){}
+ if(bar===1){
+  secondMixedBeats[beat]=division;
+  try{localStorage.setItem(secondBeatKey,JSON.stringify(secondMixedBeats))}catch(e){}
+ }else{
+  mixedBeats[beat]=division;
+  try{localStorage.setItem(mixedBeatKey,JSON.stringify(mixedBeats))}catch(e){}
+ }
  saveVariations();saveSnareDynamics();saveHats();
  refreshPatterns();syncRhythmSettings();seq();score();
 }
