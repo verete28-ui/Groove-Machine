@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 1.5</title>
+<title>Groove Lab 1.6</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -25,7 +25,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">1.5</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">1.6</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
@@ -47,7 +47,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 <div class="fold-body">
  <div class="small">A–H לכל כלי · מעבר בתחילת התיבה הבאה</div>
  <div class="variations" id="variations" dir="ltr"></div>
- <div class="line"><span class="small" id="variationStatus">HH A · SN A · KD A</span><div><button id="copyVar" title="העתקת וריאציית כלי ליעד אחר באותו כלי">העתק כלי…</button></div></div>
+ <div class="line"><span class="small" id="variationStatus">HH A · SN A · KD A</span><div style="display:flex;gap:6px;flex-wrap:wrap"><button id="randomize" title="בחירת שילוב אקראי של היי־האט, סנר ובס">🎲 רנדומייז</button><button id="copyVar" title="העתקת וריאציית כלי ליעד אחר באותו כלי">העתק כלי…</button></div></div>
 </div></details>
 <details class="fold" id="practiceFold" open><summary>🥁 תרגול — סיקוונסר / תווים</summary><div class="fold-body">
 <div class="line" style="margin:0 0 12px 0"><span class="small">סאונד התופים</span><label class="small" style="display:flex;align-items:center;gap:7px"><input type="checkbox" id="drumsEnabled" checked> 🔊 הפעל תופים</label></div>
@@ -55,7 +55,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 <section class="panel"><div id="seq" class="grid"></div><div id="scoreWrap" class="hide"><div id="score"></div><p id="scoreMsg" class="small">תיווי לתרגול · קריאה בלבד</p></div>
 </section></div></details>
 
-<p class="small">לחיצה על משבצת עורכת את המקצב. שתי התצוגות חולקות את אותם נתונים. לכל כלי שמונה תבניות בעלות אופי ריתמי שונה. בחר A–H בנפרד להיי־האט, סנר ובס. עריכת הסיקוונסר משנה רק את הווריאציה הפעילה של אותו כלי. ההגדרות נשמרות בדפדפן. אפשר להשתיק את התופים ולהשמיע רק קליק.</p>
+<p class="small">לחיצה על משבצת עורכת את המקצב. שתי התצוגות חולקות את אותם נתונים. לכל כלי שמונה תבניות בעלות אופי ריתמי שונה. בחר A–H בנפרד להיי־האט, סנר ובס. עריכת הסיקוונסר משנה רק את הווריאציה הפעילה של אותו כלי. ההגדרות נשמרות בדפדפן. אפשר להשתיק את התופים ולהשמיע רק קליק. רנדומייז בוחר שילוב חדש של וריאציות לכל שלושת הכלים.</p>
 <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
 <script>
 (()=>{
@@ -144,6 +144,21 @@ function applySelections(){
 function selectVariation(r,i){
  if(running){pending[r]=i===selected[r]?null:i;paintVariations()}
  else {selected[r]=i;pending[r]=null;applySelections()}
+}
+function randomizeCombination(){
+ // Choose independently from 8 presets per instrument, avoiding an unchanged combination.
+ const effective=selected.map((value,r)=>pending[r]===null?value:pending[r]);
+ let chosen;
+ do {chosen=selected.map(()=>Math.floor(Math.random()*8))}
+ while(chosen.every((value,r)=>value===effective[r]));
+ if(running){
+  pending=chosen;
+  paintVariations();
+ }else{
+  selected=chosen;
+  pending=[null,null,null];
+  applySelections();
+ }
 }
 function applyPendingVariations(){
  let changed=false;
@@ -302,6 +317,7 @@ $('reset').onclick=()=>{
  for(let r=0;r<3;r++)instrumentBanks[r][selected[r]]=extendedDefaults[r][selected[r]].slice();
  refreshPatterns();saveVariations();seq();score();
 };
+$('randomize').onclick=randomizeCombination;
 $('copyVar').onclick=()=>{
  const inst=prompt('איזה כלי להעתיק? HH, SN או KD');
  if(!inst)return;
