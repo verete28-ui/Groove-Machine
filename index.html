@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 1.9</title>
+<title>Groove Lab 2.0</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -29,7 +29,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">1.9</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">2.0</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
@@ -297,7 +297,7 @@ const sampleSets={
  },
  studio:{
   root:'https://cdn.jsdelivr.net/gh/teropa/drumkit@master/src/assets/',
-  files:{hh:['hatClosed.mp3','hatClosed2.mp3'],sn:['snare.mp3','snare2.mp3','snare3.mp3'],kd:['kick.mp3']}
+  files:{hh:['hatClosed.mp3'],sn:['snare.mp3'],kd:['kick.mp3']}
  }
 };
 const sampleBuffers={};
@@ -330,7 +330,8 @@ function sampleHit(key,time,kit){
  const set=chosenSet(kit),buffers=sampleBuffers[set]?.[key];
  if(!buffers?.length)return false;
  const src=ctx.createBufferSource(),gain=ctx.createGain();
- const buffer=buffers[Math.floor(Math.random()*buffers.length)];
+ // Round-robin is reserved for Acoustic HD; Studio and Dub play the same sample every hit.
+ const buffer=kit==='acoustic'?buffers[Math.floor(Math.random()*buffers.length)]:buffers[0];
  src.buffer=buffer;
  const isDub=kit==='dub',isAcoustic=kit==='acoustic';
  const level=isAcoustic?({hh:.34,sn:.58,kd:.78}[key]):isDub?({hh:.32,sn:.52,kd:.75}[key]):({hh:.43,sn:.66,kd:.85}[key]);
