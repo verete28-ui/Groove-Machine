@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 2.4</title>
+<title>Groove Lab 2.5</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -32,17 +32,18 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .step{min-width:0;aspect-ratio:1;padding:0;border-radius:4px;background:#2a3b48}.step.hit{background:#22a6c9}.step.current{outline:2px solid white}
 .track:not(.is-muted) .step.hat-open{background:#bb9b52;color:#101821}.track:not(.is-muted) .step.hat-half{background:#6c92a5;color:#101821}.track:not(.is-muted) .step.hat-pedal{background:#728e69;color:#101821}
 .track.is-muted .step.hit{background:#476372}
+.track.dense,.beats.dense{gap:2px}.track.dense .step{border-radius:2px;font-size:9px}
 .beats{display:grid;grid-template-columns:71px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
 #score{direction:ltr;overflow:hidden;background:#fff;color:#17212a;border-radius:8px;min-height:0;width:100%}#score svg{display:block;width:100%;height:auto;max-width:100%}
 .variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">2.4</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">2.5</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
  <label>BPM <input type="range" id="bpm" min="40" max="180" value="80"><b id="bpmOut">80</b></label>
- <label>חלוקת קצב <select id="rhythmGrid"><option value="straight">רגיל · 16 צעדים</option><option value="triplet">טריולות שמיניות · 12 צעדים</option></select></label>
+ <label>חלוקת קצב <select id="rhythmGrid"><option value="straight">רגיל · 16 צעדים</option><option value="triplet">טריולות שמיניות · 12 צעדים</option><option value="triplet16">טריולות שש־עשריות · 24 צעדים</option></select></label>
  <label id="swingSetting">Swing <input type="range" id="swing" min="50" max="75" value="50" step="1"><b id="swingOut">50%</b></label>
  <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label><input id="loop" type="checkbox" checked> לופ</label>
  <button id="reset">איפוס וריאציות פעילות</button>
@@ -113,15 +114,20 @@ const extendedDefaults=[
 ];
 const gridKey='groove-lab-rhythm-grid-v1';
 let rhythmGrid='straight';
-try{if(localStorage.getItem(gridKey)==='triplet')rhythmGrid='triplet'}catch(e){}
+try{const saved=localStorage.getItem(gridKey);if(saved==='triplet'||saved==='triplet16')rhythmGrid=saved}catch(e){}
 $('rhythmGrid').value=rhythmGrid;
-const stepCount=()=>rhythmGrid==='triplet'?12:16;
+const stepCount=()=>rhythmGrid==='triplet16'?24:rhythmGrid==='triplet'?12:16;
+const subdivisions=()=>rhythmGrid==='triplet16'?6:rhythmGrid==='triplet'?3:4;
 const tripletKey='groove-lab-triplet-patterns-v1';
 // Triplet presets are stored separately: the original 16-step banks remain untouched.
 const toTripletRow=row=>Array.from({length:12},(_,i)=>Boolean(row[Math.floor(i/3)*4+Math.round(i%3*1.5)]));
 const tripletDefaults=extendedDefaults.map(bank=>bank.map(toTripletRow));
 let tripletBanks=tripletDefaults.map(bank=>bank.map(row=>row.slice()));
 try{const saved=JSON.parse(localStorage.getItem(tripletKey));if(Array.isArray(saved)&&saved.length===3&&saved.every(bank=>Array.isArray(bank)&&bank.length===8&&bank.every(row=>Array.isArray(row)&&row.length===12)))tripletBanks=saved.map(bank=>bank.map(row=>row.map(Boolean)))}catch(e){}
+const triplet16Key='groove-lab-triplet16-patterns-v1';
+const triplet16Defaults=tripletDefaults.map(bank=>bank.map(row=>Array.from({length:24},(_,i)=>i%2===0?row[i/2]:false)));
+let triplet16Banks=triplet16Defaults.map(bank=>bank.map(row=>row.slice()));
+try{const saved=JSON.parse(localStorage.getItem(triplet16Key));if(Array.isArray(saved)&&saved.length===3&&saved.every(bank=>Array.isArray(bank)&&bank.length===8&&bank.every(row=>Array.isArray(row)&&row.length===24)))triplet16Banks=saved.map(bank=>bank.map(row=>row.map(Boolean)))}catch(e){}
 const storageKey='groove-lab-per-instrument-v3';
 const priorV2Key='groove-lab-per-instrument-v2';
 const previousKey='groove-lab-per-instrument-v1';
@@ -156,9 +162,10 @@ try{
 }catch(e){}
 let straightBanks=instrumentBanks;
 if(rhythmGrid==='triplet')instrumentBanks=tripletBanks;
+if(rhythmGrid==='triplet16')instrumentBanks=triplet16Banks;
 let selected=[0,0,0],pending=[null,null,null];
 let patterns=instrumentBanks.map((bank,r)=>bank[selected[r]]);
-function saveVariations(){try{localStorage.setItem(rhythmGrid==='triplet'?tripletKey:storageKey,JSON.stringify(instrumentBanks))}catch(e){}}
+function saveVariations(){try{localStorage.setItem(rhythmGrid==='triplet16'?triplet16Key:rhythmGrid==='triplet'?tripletKey:storageKey,JSON.stringify(instrumentBanks))}catch(e){}}
 function refreshPatterns(){patterns=instrumentBanks.map((bank,r)=>bank[selected[r]])}
 function paintVariations(){
  const host=$('variations');host.replaceChildren();
@@ -219,8 +226,12 @@ const tripletDynamicsKey='groove-lab-triplet-snare-dynamics-v1';
 let tripletSnareDynamics=Array.from({length:8},()=>Array(12).fill('normal'));
 try{const saved=JSON.parse(localStorage.getItem(tripletDynamicsKey));if(Array.isArray(saved)&&saved.length===8&&saved.every(row=>Array.isArray(row)&&row.length===12))tripletSnareDynamics=saved.map(row=>row.map(v=>['ghost','normal','accent'].includes(v)?v:'normal'))}catch(e){}
 let straightSnareDynamics=snareDynamics;
+const triplet16DynamicsKey='groove-lab-triplet16-snare-dynamics-v1';
+let triplet16SnareDynamics=Array.from({length:8},()=>Array(24).fill('normal'));
+try{const saved=JSON.parse(localStorage.getItem(triplet16DynamicsKey));if(Array.isArray(saved)&&saved.length===8&&saved.every(row=>Array.isArray(row)&&row.length===24))triplet16SnareDynamics=saved.map(row=>row.map(v=>['ghost','normal','accent'].includes(v)?v:'normal'))}catch(e){}
 if(rhythmGrid==='triplet')snareDynamics=tripletSnareDynamics;
-function saveSnareDynamics(){try{localStorage.setItem(rhythmGrid==='triplet'?tripletDynamicsKey:dynamicsKey,JSON.stringify(snareDynamics))}catch(e){}}
+if(rhythmGrid==='triplet16')snareDynamics=triplet16SnareDynamics;
+function saveSnareDynamics(){try{localStorage.setItem(rhythmGrid==='triplet16'?triplet16DynamicsKey:rhythmGrid==='triplet'?tripletDynamicsKey:dynamicsKey,JSON.stringify(snareDynamics))}catch(e){}}
 function snareLevel(step){return snareDynamics[selected[1]][step]}
 function snareGain(step){return ({ghost:.24,normal:1,accent:1.38})[snareLevel(step)]||1}
 let editedSnareStep=null;
@@ -241,8 +252,12 @@ const tripletHatKey='groove-lab-triplet-hihat-articulations-v1';
 let tripletHatBanks=Array.from({length:8},()=>Array.from({length:12},defaultHatStep));
 try{const saved=JSON.parse(localStorage.getItem(tripletHatKey));if(Array.isArray(saved)&&saved.length===8&&saved.every(row=>Array.isArray(row)&&row.length===12))tripletHatBanks=saved.map(row=>row.map(v=>({type:['closed','half','open','pedal'].includes(v?.type)?v.type:'closed',level:['soft','normal','accent'].includes(v?.level)?v.level:'normal'})))}catch(e){}
 let straightHatBanks=hatBanks;
+const triplet16HatKey='groove-lab-triplet16-hihat-articulations-v1';
+let triplet16HatBanks=Array.from({length:8},()=>Array.from({length:24},defaultHatStep));
+try{const saved=JSON.parse(localStorage.getItem(triplet16HatKey));if(Array.isArray(saved)&&saved.length===8&&saved.every(row=>Array.isArray(row)&&row.length===24))triplet16HatBanks=saved.map(row=>row.map(v=>({type:['closed','half','open','pedal'].includes(v?.type)?v.type:'closed',level:['soft','normal','accent'].includes(v?.level)?v.level:'normal'})))}catch(e){}
 if(rhythmGrid==='triplet')hatBanks=tripletHatBanks;
-function saveHats(){try{localStorage.setItem(rhythmGrid==='triplet'?tripletHatKey:hatKey,JSON.stringify(hatBanks))}catch(e){}}
+if(rhythmGrid==='triplet16')hatBanks=triplet16HatBanks;
+function saveHats(){try{localStorage.setItem(rhythmGrid==='triplet16'?triplet16HatKey:rhythmGrid==='triplet'?tripletHatKey:hatKey,JSON.stringify(hatBanks))}catch(e){}}
 const currentHat=step=>hatBanks[selected[0]][step];
 const hatVelocity=step=>({soft:.38,normal:1,accent:1.35})[currentHat(step).level]||1;
 let editedHatStep=null;
@@ -265,6 +280,7 @@ function seq(){
  patterns.forEach((a,r)=>{
   const row=document.createElement('div');row.className='track'+(trackMuted[r]?' is-muted':'');
   row.style.gridTemplateColumns='34px 34px repeat('+stepCount()+',minmax(0,1fr))';
+  row.classList.toggle('dense',rhythmGrid==='triplet16');
   const label=document.createElement('span');label.textContent=names[r];row.append(label);
   const mute=document.createElement('button');mute.className='mute'+(trackMuted[r]?' is-muted':'');
   mute.textContent=trackMuted[r]?'🔇':'🔊';
@@ -306,7 +322,8 @@ function seq(){
  });
  const ticks=document.createElement('div');ticks.className='beats';
  ticks.style.gridTemplateColumns='71px repeat('+stepCount()+',minmax(0,1fr))';
- const divisions=rhythmGrid==='triplet'?3:4;
+ ticks.classList.toggle('dense',rhythmGrid==='triplet16');
+ const divisions=subdivisions();
  ticks.innerHTML='<span></span>'+Array.from({length:stepCount()},(_,i)=>'<span>'+(i%divisions===0?(i/divisions+1):'')+'</span>').join('');
  host.append(ticks);
 }
@@ -316,9 +333,9 @@ function score(){
  if(!VF){$('scoreMsg').textContent='ספריית התווים אינה זמינה. בדוק חיבור לאינטרנט.';return}
  try{
   const renderer=new VF.Renderer(host,VF.Renderer.Backends.SVG);
-  const width=620;
+  const width=rhythmGrid==='triplet16'?900:620;
   renderer.resize(width,160);
-  const c=renderer.getContext(),stave=new VF.Stave(40,18,550);
+  const c=renderer.getContext(),stave=new VF.Stave(40,18,width-70);
   stave.addClef('percussion').addTimeSignature('4/4');
   stave.setContext(c).draw();
   // A single complete rhythmic voice: every attack in the sequencer is represented.
@@ -327,7 +344,29 @@ function score(){
   const durations={1:'16',2:'8',4:'q'};
   const anyHit=i=>patterns.some(row=>row[i]);
   const tuplets=[];
-  if(rhythmGrid==='triplet'){
+  if(rhythmGrid==='triplet16'){
+   // Six sixteenth triplets per beat: two triplet groups, three notes in the time of two.
+   for(let beat=0;beat<4;beat++){
+    for(let half=0;half<2;half++){
+     const tripletNotes=[];
+     for(let part=0;part<3;part++){
+      const step=beat*6+half*3+part,rest=!anyHit(step),keys=[];
+      if(!rest){
+       if(patterns[2][step])keys.push('f/4');
+       if(patterns[1][step])keys.push('c/5');
+       if(patterns[0][step])keys.push('g/5/x');
+      }
+      const note=new VF.StaveNote({clef:'percussion',keys:rest?['b/4']:keys,duration:'16'+(rest?'r':''),stem_direction:1});
+      notes.push(note);stepsOfNotes.push(step);tripletNotes.push(note);
+      if(!rest&&patterns[1][step]&&snareLevel(step)!=='normal')snareMarks.push({note,level:snareLevel(step)});
+      if(!rest&&patterns[0][step]){const hat=currentHat(step);if(hat.type!=='closed'||hat.level!=='normal')hatMarks.push({note,hat})}
+     }
+     const audible=tripletNotes.filter((note,i)=>anyHit(beat*6+half*3+i));
+     if(audible.length>=2)beamGroups.push(audible);
+     tuplets.push(new VF.Tuplet(tripletNotes,{num_notes:3,notes_occupied:2,bracketed:true,ratioed:false}));
+    }
+   }
+  }else if(rhythmGrid==='triplet'){
    for(let beat=0;beat<4;beat++){
     const beatNotes=[];
    const append=(at,length,rest)=>{
@@ -400,7 +439,7 @@ function score(){
   }
   const voice=new VF.Voice({num_beats:4,beat_value:4});
   voice.addTickables(notes);
-  new VF.Formatter().joinVoices([voice]).format([voice],455);
+  new VF.Formatter().joinVoices([voice]).format([voice],width-165);
   // IMPORTANT: attach beams BEFORE drawing notes, or VexFlow draws redundant flags.
   const beams=beamGroups.map(group=>new VF.Beam(group));
   voice.draw(c,stave);
@@ -415,7 +454,7 @@ function score(){
    const pairs=notes.map((note,i)=>({step:stepsOfNotes[i],x:note.getAbsoluteX()}));
    scorePositions=Array.from({length:stepCount()},(_,step)=>{
     const left=[...pairs].reverse().find(p=>p.step<=step)||pairs[0];
-    const right=pairs.find(p=>p.step>step)||{step:stepCount(),x:585};
+    const right=pairs.find(p=>p.step>step)||{step:stepCount(),x:width-35};
     const t=(step-left.step)/(right.step-left.step);
     return left.x+(right.x-left.x)*t;
    });
@@ -588,7 +627,8 @@ function sound(i,t){
  }
  if($('metro').checked){
   const div=Number($('clickDivision').value);
-  if(i%((rhythmGrid==='triplet')?({1:1,2:1,4:3}[div]||3):div)===0){
+  const clickEvery=rhythmGrid==='triplet16'?(div===4?6:div===2?3:1):rhythmGrid==='triplet'?(div===4?3:1):div;
+  if(i%clickEvery===0){
    const accent=$('clickAccent').checked&&i===0;
    const volume=Number($('clickVolume').value)/100;
    metronomeClick(t,accent,volume);
@@ -600,10 +640,10 @@ function mark(s){shownStep=s;$('seq').querySelectorAll('.track').forEach(row=>ro
 function stop(){running=false;activeOpenHats=[];pending=[null,null,null];paintVariations();rev++;clearInterval(timer);timer=null;position=0;mark(-1);$('play').textContent='▶ נגן';$('status').textContent='מוכן';if(ctx){bus.gain.setTargetAtTime(0,ctx.currentTime,.008);bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}}
 function tick(){if(!running)return;const n=rev;while(next<ctx.currentTime+.09&&running){const i=position,t=next;
   if(i===0)applyPendingVariations();
-  sound(i,t);setTimeout(()=>{if(running&&rev===n){mark(i);$('status').textContent='פעמה '+(Math.floor(i/(rhythmGrid==='triplet'?3:4))+1)}},Math.max(0,(t-ctx.currentTime)*1000));const quarter=60/Number($('bpm').value);
+  sound(i,t);setTimeout(()=>{if(running&&rev===n){mark(i);$('status').textContent='פעמה '+(Math.floor(i/subdivisions())+1)}},Math.max(0,(t-ctx.currentTime)*1000));const quarter=60/Number($('bpm').value);
  const ratio=Number($('swing').value)/100;
  // Eighth swing: two eighths per beat split by ratio, with the two sixteenths within each half evenly spaced.
- next+=rhythmGrid==='triplet'?quarter/3:quarter*((i%4)<2?ratio/2:(1-ratio)/2);
+ next+=rhythmGrid==='triplet16'?quarter/6:rhythmGrid==='triplet'?quarter/3:quarter*((i%4)<2?ratio/2:(1-ratio)/2);
  position++;if(position===stepCount()){position=0;if(!$('loop').checked){clearInterval(timer);timer=null;setTimeout(()=>{if(rev===n)stop()},Math.max(0,(next-ctx.currentTime)*1000));break}}}}
 $('play').onclick=()=>{if(running){stop();return}if(!init())return;running=true;rev++;position=0;next=ctx.currentTime+.05;$('play').textContent='Ⅱ השהה';tick();timer=setInterval(tick,20)};
 $('stop').onclick=stop;
@@ -614,18 +654,18 @@ $('soundKit').onchange=()=>{
  updateSampleStatus();
 };
 function syncRhythmSettings(){
- $('swingSetting').style.display=rhythmGrid==='triplet'?'none':'flex';
- $('clickDivision').querySelector('option[value="2"]').textContent=rhythmGrid==='triplet'?'כל טריולה':'שמיניות';
- $('clickDivision').querySelector('option[value="1"]').textContent=rhythmGrid==='triplet'?'כל טריולה':'שש־עשריות';
+ $('swingSetting').style.display=rhythmGrid==='straight'?'flex':'none';
+ $('clickDivision').querySelector('option[value="2"]').textContent='שמיניות';
+ $('clickDivision').querySelector('option[value="1"]').textContent=rhythmGrid==='straight'?'שש־עשריות':'כל טריולה';
  $('clickDivision').value=rhythmGrid==='triplet'?'4':$('clickDivision').value;
  updateClickSummary();
 }
 $('rhythmGrid').onchange=()=>{
  if(running)stop();
  rhythmGrid=$('rhythmGrid').value;
- instrumentBanks=rhythmGrid==='triplet'?tripletBanks:straightBanks;
- snareDynamics=rhythmGrid==='triplet'?tripletSnareDynamics:straightSnareDynamics;
- hatBanks=rhythmGrid==='triplet'?tripletHatBanks:straightHatBanks;
+ instrumentBanks=rhythmGrid==='triplet16'?triplet16Banks:rhythmGrid==='triplet'?tripletBanks:straightBanks;
+ snareDynamics=rhythmGrid==='triplet16'?triplet16SnareDynamics:rhythmGrid==='triplet'?tripletSnareDynamics:straightSnareDynamics;
+ hatBanks=rhythmGrid==='triplet16'?triplet16HatBanks:rhythmGrid==='triplet'?tripletHatBanks:straightHatBanks;
  refreshPatterns();shownStep=-1;
  try{localStorage.setItem(gridKey,rhythmGrid)}catch(e){}
  syncRhythmSettings();seq();score();
@@ -647,7 +687,7 @@ folds.forEach(id=>$(id).addEventListener('toggle',()=>{try{localStorage.setItem(
 syncRhythmSettings();
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===b));$('seq').classList.toggle('hide',b.dataset.view!=='seq');$('scoreWrap').classList.toggle('hide',b.dataset.view!=='score');if(b.dataset.view==='score')score()});
 $('reset').onclick=()=>{
- for(let r=0;r<3;r++)instrumentBanks[r][selected[r]]=(rhythmGrid==='triplet'?tripletDefaults:extendedDefaults)[r][selected[r]].slice();
+ for(let r=0;r<3;r++)instrumentBanks[r][selected[r]]=(rhythmGrid==='triplet16'?triplet16Defaults:rhythmGrid==='triplet'?tripletDefaults:extendedDefaults)[r][selected[r]].slice();
  hatBanks[selected[0]]=Array.from({length:stepCount()},defaultHatStep);saveHats();
  snareDynamics[selected[1]]=Array(stepCount()).fill('normal');saveSnareDynamics();
  refreshPatterns();saveVariations();seq();score();
