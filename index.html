@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 1.6</title>
+<title>Groove Lab 1.7</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -18,14 +18,18 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .control-grid label{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:13px}
 .control-grid select{background:#263a48;color:#eef5fa;border:1px solid #507084;border-radius:7px;padding:7px}
 .tabs{display:flex;gap:8px}.tabs button{flex:1}.grid{direction:ltr}
-.track{display:grid;grid-template-columns:36px repeat(16,minmax(0,1fr));gap:3px;align-items:center;margin:14px 0}
+.track{display:grid;grid-template-columns:34px 34px repeat(16,minmax(0,1fr));gap:3px;align-items:center;margin:14px 0}
+.track .mute{padding:0;min-height:28px;font-size:15px;border-radius:5px}
+.track .mute.is-muted{background:#753e42;border-color:#cf7679}
+.track.is-muted .step.hit{background:#476372}
+.track .mute:focus-visible{outline:2px solid #fff}
 .step{min-width:0;aspect-ratio:1;padding:0;border-radius:4px;background:#2a3b48}.step.hit{background:#22a6c9}.step.current{outline:2px solid white}
-.beats{display:grid;grid-template-columns:36px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
+.beats{display:grid;grid-template-columns:71px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
 #score{direction:ltr;overflow:hidden;background:#fff;color:#17212a;border-radius:8px;min-height:0;width:100%}#score svg{display:block;width:100%;height:auto;max-width:100%}
 .variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">1.6</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">1.7</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
@@ -55,7 +59,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 <section class="panel"><div id="seq" class="grid"></div><div id="scoreWrap" class="hide"><div id="score"></div><p id="scoreMsg" class="small">תיווי לתרגול · קריאה בלבד</p></div>
 </section></div></details>
 
-<p class="small">לחיצה על משבצת עורכת את המקצב. שתי התצוגות חולקות את אותם נתונים. לכל כלי שמונה תבניות בעלות אופי ריתמי שונה. בחר A–H בנפרד להיי־האט, סנר ובס. עריכת הסיקוונסר משנה רק את הווריאציה הפעילה של אותו כלי. ההגדרות נשמרות בדפדפן. אפשר להשתיק את התופים ולהשמיע רק קליק. רנדומייז בוחר שילוב חדש של וריאציות לכל שלושת הכלים.</p>
+<p class="small">לחיצה על משבצת עורכת את המקצב. שתי התצוגות חולקות את אותם נתונים. לכל כלי שמונה תבניות בעלות אופי ריתמי שונה. בחר A–H בנפרד להיי־האט, סנר ובס. עריכת הסיקוונסר משנה רק את הווריאציה הפעילה של אותו כלי. ההגדרות נשמרות בדפדפן. אפשר להשתיק כל כלי בנפרד דרך סמל הרמקול לידו, או את כל התופים ולהשמיע רק קליק. רנדומייז בוחר שילוב חדש של וריאציות לכל שלושת הכלים.</p>
 <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
 <script>
 (()=>{
@@ -166,9 +170,36 @@ function applyPendingVariations(){
  if(changed)applySelections();
 }
 
-const names=['HH','SN','KD'];let ctx,bus,running=false,timer=null,position=0,next=0,rev=0,shownStep=-1,scorePositions=[],scoreCursor=null;
-function seq(){const host=$('seq');host.replaceChildren();patterns.forEach((a,r)=>{const row=document.createElement('div');row.className='track';const label=document.createElement('span');label.textContent=names[r];row.append(label);a.forEach((hit,i)=>{const b=document.createElement('button');b.className='step'+(hit?' hit':'');b.setAttribute('aria-label',names[r]+' step '+(i+1));b.onclick=()=>{a[i]=!a[i];saveVariations();seq();score()};row.append(b)});host.append(row)});
-const ticks=document.createElement('div');ticks.className='beats';ticks.innerHTML='<span></span>'+Array.from({length:16},(_,i)=>'<span>'+(i%4===0?(i/4+1):'')+'</span>').join('');host.append(ticks)}
+const names=['HH','SN','KD'];
+const muteStorageKey='groove-lab-track-mutes-v1';
+let trackMuted=[false,false,false];
+try{const saved=JSON.parse(localStorage.getItem(muteStorageKey));if(Array.isArray(saved)&&saved.length===3)trackMuted=saved.map(Boolean)}catch(e){}
+function setTrackMute(r){trackMuted[r]=!trackMuted[r];try{localStorage.setItem(muteStorageKey,JSON.stringify(trackMuted))}catch(e){};seq()}
+let ctx,bus,running=false,timer=null,position=0,next=0,rev=0,shownStep=-1,scorePositions=[],scoreCursor=null;
+function seq(){
+ const host=$('seq');host.replaceChildren();
+ patterns.forEach((a,r)=>{
+  const row=document.createElement('div');row.className='track'+(trackMuted[r]?' is-muted':'');
+  const label=document.createElement('span');label.textContent=names[r];row.append(label);
+  const mute=document.createElement('button');mute.className='mute'+(trackMuted[r]?' is-muted':'');
+  mute.textContent=trackMuted[r]?'🔇':'🔊';
+  mute.title=(trackMuted[r]?'בטל השתקה: ':'השתק: ')+names[r];
+  mute.setAttribute('aria-label',mute.title);
+  mute.setAttribute('aria-pressed',String(trackMuted[r]));
+  mute.onclick=()=>setTrackMute(r);
+  row.append(mute);
+  a.forEach((hit,i)=>{
+   const b=document.createElement('button');
+   b.className='step'+(hit?' hit':'')+(i===shownStep?' current':'');
+   b.setAttribute('aria-label',names[r]+' step '+(i+1));
+   b.onclick=()=>{a[i]=!a[i];saveVariations();seq();score()};
+   row.append(b);
+  });
+  host.append(row);
+ });
+ const ticks=document.createElement('div');ticks.className='beats';ticks.innerHTML='<span></span>'+Array.from({length:16},(_,i)=>'<span>'+(i%4===0?(i/4+1):'')+'</span>').join('');
+ host.append(ticks);
+}
 function score(){
  const host=$('score');host.replaceChildren();
  const VF=window.Vex?.Flow;
@@ -272,9 +303,9 @@ function metronomeClick(t,accent,volume){
 }
 function sound(i,t){
  if($('drumsEnabled').checked){
-  if(patterns[0][i])noise(t,.045,6400,.24);
-  if(patterns[1][i]){noise(t,.13,1100,.48);tone(t,170,.07,.15)}
-  if(patterns[2][i])tone(t,145,.24,.85,43);
+  if(!trackMuted[0]&&patterns[0][i])noise(t,.045,6400,.24);
+  if(!trackMuted[1]&&patterns[1][i]){noise(t,.13,1100,.48);tone(t,170,.07,.15)}
+  if(!trackMuted[2]&&patterns[2][i])tone(t,145,.24,.85,43);
  }
  if($('metro').checked){
   const div=Number($('clickDivision').value);
