@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 2.8</title>
+<title>Groove Lab 2.9</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -46,7 +46,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">2.8</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">2.9</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
@@ -778,11 +778,47 @@ $('rhythmGrid').onchange=()=>{
 };
 function changeBeatDivision(beat,division){
  if(![3,4,6].includes(division)||beat<0||beat>3)return;
+ if(rhythmGrid==='mixed'&&mixedBeats[beat]===division)return;
  if(running)stop();
- if(rhythmGrid!=='mixed'){rhythmGrid='mixed';$('rhythmGrid').value='mixed';instrumentBanks=mixedBanks;snareDynamics=mixedSnareDynamics;hatBanks=mixedHatBanks;
- try{localStorage.setItem(gridKey,'mixed')}catch(e){}}
+ if(rhythmGrid!=='mixed'){
+  // Preserve every other beat exactly as it appears in the current uniform grid.
+  // Transfer ALL instrument variations, snare dynamics and hat articulations
+  // into absolute 48-tick positions before changing the requested beat.
+  const formerDivision=subdivisions();
+  const sourceBanks=instrumentBanks,sourceSnare=snareDynamics,sourceHats=hatBanks;
+  const ticksForSource=Array.from({length:4},(_,b)=>offsets(formerDivision).map(t=>b*12+t)).flat();
+  const expand=row=>Array.from({length:48},(_,tick)=>{
+   const sourceIndex=ticksForSource.indexOf(tick);
+   return sourceIndex>=0?Boolean(row[sourceIndex]):false;
+  });
+  const expandLevel=row=>Array.from({length:48},(_,tick)=>{
+   const sourceIndex=ticksForSource.indexOf(tick);
+   return sourceIndex>=0?(row[sourceIndex]||'normal'):'normal';
+  });
+  const expandHat=row=>Array.from({length:48},(_,tick)=>{
+   const sourceIndex=ticksForSource.indexOf(tick);
+   return sourceIndex>=0?{...(row[sourceIndex]||defaultHatStep())}:defaultHatStep();
+  });
+  // Keep a backup of the previous mixed work when entering it from another mode.
+  try{
+   const prior=localStorage.getItem(mixedKey);
+   if(prior)localStorage.setItem('groove-lab-mixed-patterns-backup-v1',prior);
+   const priorSnare=localStorage.getItem(mixedDynamicsKey);
+   if(priorSnare)localStorage.setItem('groove-lab-mixed-snare-backup-v1',priorSnare);
+   const priorHat=localStorage.getItem(mixedHatKey);
+   if(priorHat)localStorage.setItem('groove-lab-mixed-hats-backup-v1',priorHat);
+  }catch(e){}
+  mixedBanks=sourceBanks.map(bank=>bank.map(expand));
+  mixedSnareDynamics=sourceSnare.map(expandLevel);
+  mixedHatBanks=sourceHats.map(expandHat);
+  mixedBeats=Array(4).fill(formerDivision);
+  rhythmGrid='mixed';$('rhythmGrid').value='mixed';
+  instrumentBanks=mixedBanks;snareDynamics=mixedSnareDynamics;hatBanks=mixedHatBanks;
+  try{localStorage.setItem(gridKey,'mixed')}catch(e){}
+ }
  mixedBeats[beat]=division;
  try{localStorage.setItem(mixedBeatKey,JSON.stringify(mixedBeats))}catch(e){}
+ saveVariations();saveSnareDynamics();saveHats();
  refreshPatterns();syncRhythmSettings();seq();score();
 }
 $('swing').oninput=()=>{$('swingOut').textContent=$('swing').value+'%'};
