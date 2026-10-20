@@ -919,17 +919,20 @@ function sampleHit(key,time,kit,velocity=1,registerHat=false){
   kit==='reggae'?buffers[Math.min(buffers.length-1,Math.floor(Math.max(0,velocity-.3)/.4))]:buffers[0];
  src.buffer=buffer;
  const isDub=kit==='dub',isAcoustic=kit==='acoustic',isRoots=kit==='reggae';
- const level=isRoots?({hh:.37,hhHalf:.30,hhOpen:.28,hhPedal:.31,sn:.44,kd:.65}[key]):
+ // Keyboardia's instrument manifests specify +12.66 dB for kick,
+ // +16.37 dB for closed hat, +10.89 dB for open hat, and +0.23 dB
+ // for snare. Previously we ignored that calibration, making the
+ // unprocessed recordings quiet and badly balanced.
+ const rootsLevel={hh:1.65,hhHalf:.95,hhOpen:.90,hhPedal:1.25,sn:.60,kd:2.40};
+ const level=isRoots?rootsLevel[key]:
   isAcoustic?({hh:.34,hhHalf:.32,hhOpen:.28,hhPedal:.40,sn:.58,kd:.78}[key]):
   isDub?({hh:.32,sn:.52,kd:.75}[key]):({hh:.43,sn:.66,kd:.85}[key]);
  gain.gain.setValueAtTime(level*velocity,time);
  let end=buffer.duration,output=gain;
  if(isRoots){
-  // Restrained low-pass colour on the whole kit. Shorten half-open and pedal
-  // articulations rather than mislabeling the sampled open/closed hits.
-  const filter=ctx.createBiquadFilter();filter.type='lowpass';
-  filter.frequency.value=key==='kd'?3800:key==='sn'?5200:key==='hhOpen'?9000:7700;
-  src.connect(filter);filter.connect(gain);
+  // Audition the dry recordings first. Filtering the entire kit on top
+  // of the missing gain calibration made the sound unnaturally dull.
+  src.connect(gain);
   if(key==='hhHalf'||key==='hhPedal'){
    end=Math.min(buffer.duration,key==='hhHalf'?.28:.105);
    gain.gain.setValueAtTime(level*velocity,time+Math.max(.001,end-.038));
@@ -1235,4 +1238,4 @@ $('lengthEditorClose').onclick=closeLengthEditor;
 $('lengthEditor').onclick=e=>{if(e.target===$('lengthEditor'))closeLengthEditor()};
 paintVariations();seq();window.addEventListener('load',score);
 })();
-</script><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת. Reggae Roots (ניסוי) — <a style="color:#8edcf4" href="https://github.com/sfzinstruments/virtuosity_drums" target="_blank" rel="noopener">Virtuosity Drums</a> מאת Versilian Studios / Karoryfer Samples, CC0, דגימות AAC מותאמות באמצעות <a style="color:#8edcf4" href="https://github.com/adewale/keyboardia" target="_blank" rel="noopener">Keyboardia</a>. חצי פתוח ופדאל הם קירוב בעיבוד צליל.</p></main></html>
+</script><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת. Reggae Roots (ניסוי, סאונד יבש ומכויל) — <a style="color:#8edcf4" href="https://github.com/sfzinstruments/virtuosity_drums" target="_blank" rel="noopener">Virtuosity Drums</a> מאת Versilian Studios / Karoryfer Samples, CC0, דגימות AAC מותאמות באמצעות <a style="color:#8edcf4" href="https://github.com/adewale/keyboardia" target="_blank" rel="noopener">Keyboardia</a>. חצי פתוח ופדאל הם קירוב בעיבוד צליל.</p></main></html>
