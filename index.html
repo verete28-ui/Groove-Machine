@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 1.1</title>
+<title>Groove Lab 1.2</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -11,16 +11,16 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .step{min-width:0;aspect-ratio:1;padding:0;border-radius:4px;background:#2a3b48}.step.hit{background:#22a6c9}.step.current{outline:2px solid white}
 .beats{display:grid;grid-template-columns:36px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
 #score{direction:ltr;overflow:hidden;background:#fff;color:#17212a;border-radius:8px;min-height:0;width:100%}#score svg{display:block;width:100%;height:auto;max-width:100%}
-.variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:65px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row span{font-size:12px;font-weight:600}.variations button{min-width:0;padding:7px 2px;line-height:1.2}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
+.variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">1.1</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div><button id="toggle">⚙ הגדרות ▾</button></header>
-<section id="settings" class="panel line"><label>BPM <input type="range" id="bpm" min="40" max="180" value="80"> <b id="bpmOut">80</b></label><label><input id="loop" type="checkbox" checked> לופ</label><label><input id="metro" type="checkbox"> קליק</label><button id="reset">איפוס</button></section>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">1.2</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div><button id="toggle">⚙ הגדרות ▾</button></header>
+<section id="settings" class="panel line"><label>BPM <input type="range" id="bpm" min="40" max="180" value="80"> <b id="bpmOut">80</b></label><label>Swing <input type="range" id="swing" min="50" max="75" value="50" step="1"> <b id="swingOut">50%</b></label><label><input id="loop" type="checkbox" checked> לופ</label><label><input id="metro" type="checkbox"> קליק</label><button id="reset">איפוס</button></section>
 <div class="panel" style="padding:10px"><div class="small">וריאציות נפרדות לכל כלי — מעבר בתחילת התיבה הבאה</div><div class="variations" id="variations" dir="ltr"></div><div class="line"><span class="small" id="variationStatus">HH A · SN A · KD A</span><div><button id="copyVar" title="העתקת וריאציית כלי ליעד אחר באותו כלי">העתק כלי…</button></div></div></div>
 <div class="tabs"><button class="active" data-view="seq">סיקוונסר</button><button data-view="score">תווים</button></div>
 <section class="panel"><div id="seq" class="grid"></div><div id="scoreWrap" class="hide"><div id="score"></div><p id="scoreMsg" class="small">תיווי לתרגול · קריאה בלבד</p></div>
 <div class="transport"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div></section>
-<p class="small">לחיצה על משבצת עורכת את המקצב. שתי התצוגות חולקות את אותם נתונים. לכל כלי ארבע תבניות בעלות אופי ריתמי שונה. בחר A–D בנפרד להיי־האט, סנר ובס. עריכת הסיקוונסר משנה רק את הווריאציה הפעילה של אותו כלי. ההגדרות נשמרות בדפדפן.</p>
+<p class="small">לחיצה על משבצת עורכת את המקצב. שתי התצוגות חולקות את אותם נתונים. לכל כלי שמונה תבניות בעלות אופי ריתמי שונה. בחר A–H בנפרד להיי־האט, סנר ובס. עריכת הסיקוונסר משנה רק את הווריאציה הפעילה של אותו כלי. ההגדרות נשמרות בדפדפן.</p>
 <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
 <script>
 (()=>{
@@ -34,38 +34,49 @@ const defaults=[base(),
 // Each instrument has four deliberately distinct teaching patterns.
 const make=indices=>Array.from({length:16},(_,i)=>indices.includes(i));
 const instrumentLabels=[
- ['שמיניות','רבעים','16יות','אוף־ביט'],
- ['2 ו־4','חצי־זמן','סינקופה','פיל'],
- ['1 ו־3','סינקופה','ארבע פעימות','שבירות']
+ ['שמיניות','רבעים','16יות','אוף־ביט','דליל','דילוגים','שלשות','הדגשות'],
+ ['2 ו־4','חצי־זמן','סינקופה','פיל','בלי 4','אוף־ביט','רולים','מענה'],
+ ['1 ו־3','סינקופה','ארבע פעימות','שבירות','1 בלבד','דאבלים','אוף־ביט','דחיפות']
 ];
 const newDefaults=[
  [make([0,2,4,6,8,10,12,14]),make([0,4,8,12]),make([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]),make([2,6,10,14])],
  [make([4,12]),make([8]),make([4,11,12,15]),make([4,12,14,15])],
  [make([0,8]),make([0,6,10]),make([0,4,8,12]),make([0,7,11,14])]
 ];
-const storageKey='groove-lab-per-instrument-v2';
+const extendedDefaults=[
+ [...newDefaults[0],make([0,4,8,14]),make([0,3,6,8,11,14]),make([0,2,5,8,10,13]),make([0,1,4,6,8,9,12,14])],
+ [...newDefaults[1],make([4]),make([2,6,10,14]),make([4,7,12,13,14,15]),make([4,10,12])],
+ [...newDefaults[2],make([0]),make([0,1,8,9]),make([2,6,10,14]),make([0,3,8,11,15])]
+];
+const storageKey='groove-lab-per-instrument-v3';
+const priorV2Key='groove-lab-per-instrument-v2';
 const previousKey='groove-lab-per-instrument-v1';
 const oldStorageKey='groove-lab-variations-v1';
 // Existing custom edits survive; unedited former presets receive the new patterns.
 const previousDefaults=Array.from({length:3},(_,r)=>defaults.map(v=>v[r]));
-let instrumentBanks=newDefaults.map(bank=>bank.map(row=>row.slice()));
+let instrumentBanks=extendedDefaults.map(bank=>bank.map(row=>row.slice()));
 try{
- const isBank=x=>Array.isArray(x)&&x.length===3&&x.every(bank=>Array.isArray(bank)&&bank.length===4&&bank.every(row=>Array.isArray(row)&&row.length===16));
+ const isBank=(x,n)=>Array.isArray(x)&&x.length===3&&x.every(bank=>Array.isArray(bank)&&bank.length===n&&bank.every(row=>Array.isArray(row)&&row.length===16));
  const stored=JSON.parse(localStorage.getItem(storageKey));
- if(isBank(stored))instrumentBanks=stored.map(bank=>bank.map(row=>row.map(Boolean)));
+ if(isBank(stored,8))instrumentBanks=stored.map(bank=>bank.map(row=>row.map(Boolean)));
  else{
-  let prior=JSON.parse(localStorage.getItem(previousKey));
-  if(!isBank(prior)){
+  const v2=JSON.parse(localStorage.getItem(priorV2Key));
+  if(isBank(v2,4)){
+   for(let r=0;r<3;r++)for(let v=0;v<4;v++)instrumentBanks[r][v]=v2[r][v].map(Boolean);
+  }else{
+   let prior=JSON.parse(localStorage.getItem(previousKey));
+   if(!isBank(prior,4)){
    const old=JSON.parse(localStorage.getItem(oldStorageKey));
    if(Array.isArray(old)&&old.length===4&&old.every(v=>Array.isArray(v)&&v.length===3&&v.every(row=>Array.isArray(row)&&row.length===16))){
     prior=Array.from({length:3},(_,r)=>old.map(v=>v[r]));
    }
   }
-  if(isBank(prior)){
+  if(isBank(prior,4)){
    for(let r=0;r<3;r++)for(let v=0;v<4;v++){
     const priorRow=prior[r][v].map(Boolean);
     if(priorRow.some((hit,i)=>hit!==previousDefaults[r][v][i]))instrumentBanks[r][v]=priorRow;
    }
+  }
   }
  }
 }catch(e){}
@@ -78,17 +89,17 @@ function paintVariations(){
  ['HH','SN','KD'].forEach((name,r)=>{
   const line=document.createElement('div');line.className='variation-row';
   const label=document.createElement('span');label.textContent=name;line.append(label);
-  for(let i=0;i<4;i++){
-   const btn=document.createElement('button');btn.textContent='ABCD'[i];const detail=document.createElement('span');detail.className='vlabel';detail.textContent=instrumentLabels[r][i];btn.append(detail);
+  for(let i=0;i<8;i++){
+   const btn=document.createElement('button');btn.textContent='ABCDEFGH'[i];const detail=document.createElement('span');detail.className='vlabel';detail.textContent=instrumentLabels[r][i];btn.append(detail);
    btn.className=(i===selected[r]?'active ':'')+(i===pending[r]?'pending':'');
-   btn.setAttribute('aria-label',name+' וריאציה '+'ABCD'[i]);
+   btn.setAttribute('aria-label',name+' וריאציה '+'ABCDEFGH'[i]);
    btn.onclick=()=>selectVariation(r,i);line.append(btn);
   }
   host.append(line);
  });
- const active=['HH','SN','KD'].map((n,r)=>n+' '+ 'ABCD'[selected[r]]).join(' · ');
+ const active=['HH','SN','KD'].map((n,r)=>n+' '+ 'ABCDEFGH'[selected[r]]).join(' · ');
  const queued=['HH','SN','KD'].filter((n,r)=>pending[r]!==null).map(n=>{
-  const r=['HH','SN','KD'].indexOf(n);return n+' → '+ 'ABCD'[pending[r]];
+  const r=['HH','SN','KD'].indexOf(n);return n+' → '+ 'ABCDEFGH'[pending[r]];
  }).join(', ');
  $('variationStatus').textContent=queued?active+' | בהמתנה: '+queued:active;
 }
@@ -203,14 +214,18 @@ function mark(s){shownStep=s;$('seq').querySelectorAll('.track').forEach(row=>ro
 function stop(){running=false;pending=[null,null,null];paintVariations();rev++;clearInterval(timer);timer=null;position=0;mark(-1);$('play').textContent='▶ נגן';$('status').textContent='מוכן';if(ctx){bus.gain.setTargetAtTime(0,ctx.currentTime,.008);bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}}
 function tick(){if(!running)return;const n=rev;while(next<ctx.currentTime+.09&&running){const i=position,t=next;
   if(i===0)applyPendingVariations();
-  sound(i,t);setTimeout(()=>{if(running&&rev===n){mark(i);$('status').textContent='פעמה '+(Math.floor(i/4)+1)}},Math.max(0,(t-ctx.currentTime)*1000));next+=60/Number($('bpm').value)/4;position++;if(position===16){position=0;if(!$('loop').checked){clearInterval(timer);timer=null;setTimeout(()=>{if(rev===n)stop()},Math.max(0,(next-ctx.currentTime)*1000));break}}}}
+  sound(i,t);setTimeout(()=>{if(running&&rev===n){mark(i);$('status').textContent='פעמה '+(Math.floor(i/4)+1)}},Math.max(0,(t-ctx.currentTime)*1000));const quarter=60/Number($('bpm').value);
+ const ratio=Number($('swing').value)/100;
+ // Eighth swing: two eighths per beat split by ratio, with the two sixteenths within each half evenly spaced.
+ next+=quarter*((i%4)<2?ratio/2:(1-ratio)/2);position++;if(position===16){position=0;if(!$('loop').checked){clearInterval(timer);timer=null;setTimeout(()=>{if(rev===n)stop()},Math.max(0,(next-ctx.currentTime)*1000));break}}}}
 $('play').onclick=()=>{if(running){stop();return}if(!init())return;running=true;rev++;position=0;next=ctx.currentTime+.05;$('play').textContent='Ⅱ השהה';tick();timer=setInterval(tick,20)};
 $('stop').onclick=stop;
 $('bpm').oninput=()=>{$('bpmOut').textContent=$('bpm').value};
+$('swing').oninput=()=>{$('swingOut').textContent=$('swing').value+'%'};
 $('toggle').onclick=()=>{$('settings').classList.toggle('hide');$('toggle').textContent=$('settings').classList.contains('hide')?'⚙ הגדרות ▸':'⚙ הגדרות ▾'};
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x===b));$('seq').classList.toggle('hide',b.dataset.view!=='seq');$('scoreWrap').classList.toggle('hide',b.dataset.view!=='score');if(b.dataset.view==='score')score()});
 $('reset').onclick=()=>{
- for(let r=0;r<3;r++)instrumentBanks[r][selected[r]]=newDefaults[r][selected[r]].slice();
+ for(let r=0;r<3;r++)instrumentBanks[r][selected[r]]=extendedDefaults[r][selected[r]].slice();
  refreshPatterns();saveVariations();seq();score();
 };
 $('copyVar').onclick=()=>{
@@ -218,14 +233,14 @@ $('copyVar').onclick=()=>{
  if(!inst)return;
  const r=['HH','SN','KD'].indexOf(inst.trim().toUpperCase());
  if(r<0){alert('בחר HH, SN או KD');return}
- const name=prompt('לאיזו וריאציה של '+ ['HH','SN','KD'][r] +' להעתיק? A, B, C או D');
+ const name=prompt('לאיזו וריאציה של '+ ['HH','SN','KD'][r] +' להעתיק? A עד H');
  if(!name)return;
- const dest='ABCD'.indexOf(name.trim().toUpperCase());
- if(dest<0){alert('בחר A, B, C או D');return}
+ const dest='ABCDEFGH'.indexOf(name.trim().toUpperCase());
+ if(dest<0){alert('בחר A עד H');return}
  if(dest===selected[r])return;
  instrumentBanks[r][dest]=instrumentBanks[r][selected[r]].slice();
  saveVariations();
- $('variationStatus').textContent='הועתק '+['HH','SN','KD'][r]+' אל '+ 'ABCD'[dest];
+ $('variationStatus').textContent='הועתק '+['HH','SN','KD'][r]+' אל '+ 'ABCDEFGH'[dest];
 };
 paintVariations();seq();window.addEventListener('load',score);
 })();
