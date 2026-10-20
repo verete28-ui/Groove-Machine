@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 2.7</title>
+<title>Groove Lab 2.8</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -39,12 +39,14 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .beat-selectors select{background:#263a48;color:#fff;border:1px solid #507084;border-radius:7px;padding:5px 2px;width:100%;font-size:12px}
 .beat-slice{display:grid;min-width:0;gap:2px}
 .beat-slice .step{min-width:0}
+.beat-slice{position:relative}.off-grid{position:absolute;top:100%;left:0;padding:1px 4px;background:#aa6731;border:0;border-radius:5px;font-size:10px;min-height:14px;z-index:2}
+.track:has(.off-grid){margin-bottom:24px}
 .beats{display:grid;grid-template-columns:71px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
 #score{direction:ltr;overflow:hidden;background:#fff;color:#17212a;border-radius:8px;min-height:0;width:100%}#score svg{display:block;width:100%;height:auto;max-width:100%}
 .variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">2.7</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">2.8</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
@@ -129,9 +131,9 @@ $('rhythmGrid').value=rhythmGrid;
 const mixedBeatKey='groove-lab-mixed-beats-v1';
 let mixedBeats=[4,3,4,6];
 try{const saved=JSON.parse(localStorage.getItem(mixedBeatKey));if(Array.isArray(saved)&&saved.length===4&&saved.every(n=>[3,4,6].includes(n)))mixedBeats=saved}catch(e){}
-const stepCount=()=>rhythmGrid==='mixed'?mixedBeats.reduce((a,b)=>a+b,0):rhythmGrid==='triplet16'?24:rhythmGrid==='triplet'?12:16;
-const beatStarts=()=>mixedBeats.map((_,i)=>mixedBeats.slice(0,i).reduce((a,b)=>a+b,0));
-function getStepBeat(i){if(rhythmGrid!=='mixed')return Math.floor(i/subdivisions());const starts=beatStarts();return starts.findLastIndex(x=>x<=i)};
+const stepCount=()=>rhythmGrid==='mixed'?48:rhythmGrid==='triplet16'?24:rhythmGrid==='triplet'?12:16;
+const beatStarts=()=>[0,12,24,36];
+function getStepBeat(i){return rhythmGrid==='mixed'?Math.floor(i/12):Math.floor(i/subdivisions())};
 const subdivisions=()=>rhythmGrid==='triplet16'?6:rhythmGrid==='triplet'?3:4;
 const tripletKey='groove-lab-triplet-patterns-v1';
 // Triplet presets are stored separately: the original 16-step banks remain untouched.
@@ -143,12 +145,18 @@ const triplet16Key='groove-lab-triplet16-patterns-v1';
 const triplet16Defaults=tripletDefaults.map(bank=>bank.map(row=>Array.from({length:24},(_,i)=>i%2===0?row[i/2]:false)));
 let triplet16Banks=triplet16Defaults.map(bank=>bank.map(row=>row.slice()));
 try{const saved=JSON.parse(localStorage.getItem(triplet16Key));if(Array.isArray(saved)&&saved.length===3&&saved.every(bank=>Array.isArray(bank)&&bank.length===8&&bank.every(row=>Array.isArray(row)&&row.length===24)))triplet16Banks=saved.map(bank=>bank.map(row=>row.map(Boolean)))}catch(e){}
-const mixedKey='groove-lab-mixed-patterns-v1';
-const makeMixedDefaults=()=>extendedDefaults.map(bank=>bank.map(row=>mixedBeats.flatMap((division,beat)=>Array.from({length:division},(_,i)=>row[beat*4+Math.min(3,Math.round(i*4/division))]))));
-let mixedDefaults=makeMixedDefaults();
-let mixedBanks=mixedDefaults.map(bank=>bank.map(row=>row.slice()));
-try{const stored=JSON.parse(localStorage.getItem(mixedKey));if(stored&&JSON.stringify(stored.divisions)===JSON.stringify(mixedBeats)&&Array.isArray(stored.banks)&&stored.banks.length===3&&stored.banks.every(bank=>Array.isArray(bank)&&bank.length===8&&bank.every(row=>Array.isArray(row)&&row.length===stepCountForMixed())))mixedBanks=stored.banks.map(bank=>bank.map(row=>row.map(Boolean)))}catch(e){}
-function stepCountForMixed(){return mixedBeats.reduce((a,b)=>a+b,0)}
+const mixedKey='groove-lab-mixed-patterns-v2';
+const offsets=n=>Array.from({length:n},(_,i)=>i*12/n);
+const stepCountForMixed=()=>48;
+const expandMixed=(row,divisions,convert,defaultValue)=>{const out=Array.from({length:48},()=>defaultValue());let p=0;
+ for(let beat=0;beat<4;beat++){offsets(divisions[beat]).forEach((t,i)=>out[beat*12+t]=convert(row[p+i]));p+=divisions[beat]}return out};
+const makeMixedDefaults=()=>extendedDefaults.map(bank=>bank.map(row=>Array.from({length:48},(_,i)=>i%3===0?Boolean(row[Math.floor(i/12)*4+(i%12)/3]):false)));
+let mixedDefaults=makeMixedDefaults(),mixedBanks=mixedDefaults.map(bank=>bank.map(row=>row.slice()));
+try{const saved=JSON.parse(localStorage.getItem(mixedKey));
+ if(saved?.banks?.length===3&&saved.banks.every(bank=>bank.length===8&&bank.every(row=>row.length===48)))mixedBanks=saved.banks;
+ else{const old=JSON.parse(localStorage.getItem('groove-lab-mixed-patterns-v1'));
+  if(old?.divisions?.length===4&&old?.banks?.length===3)mixedBanks=old.banks.map(bank=>bank.map(row=>expandMixed(row,old.divisions,Boolean,()=>false)))}
+}catch(e){}
 const storageKey='groove-lab-per-instrument-v3';
 const priorV2Key='groove-lab-per-instrument-v2';
 const previousKey='groove-lab-per-instrument-v1';
@@ -187,7 +195,7 @@ if(rhythmGrid==='triplet16')instrumentBanks=triplet16Banks;
 if(rhythmGrid==='mixed')instrumentBanks=mixedBanks;
 let selected=[0,0,0],pending=[null,null,null];
 let patterns=instrumentBanks.map((bank,r)=>bank[selected[r]]);
-function saveVariations(){try{if(rhythmGrid==='mixed')localStorage.setItem(mixedKey,JSON.stringify({divisions:mixedBeats,banks:mixedBanks}));else localStorage.setItem(rhythmGrid==='triplet16'?triplet16Key:rhythmGrid==='triplet'?tripletKey:storageKey,JSON.stringify(instrumentBanks))}catch(e){}}
+function saveVariations(){try{if(rhythmGrid==='mixed')localStorage.setItem(mixedKey,JSON.stringify({banks:mixedBanks}));else localStorage.setItem(rhythmGrid==='triplet16'?triplet16Key:rhythmGrid==='triplet'?tripletKey:storageKey,JSON.stringify(instrumentBanks))}catch(e){}}
 function refreshPatterns(){patterns=instrumentBanks.map((bank,r)=>bank[selected[r]])}
 function paintVariations(){
  const host=$('variations');host.replaceChildren();
@@ -253,11 +261,14 @@ let triplet16SnareDynamics=Array.from({length:8},()=>Array(24).fill('normal'));
 try{const saved=JSON.parse(localStorage.getItem(triplet16DynamicsKey));if(Array.isArray(saved)&&saved.length===8&&saved.every(row=>Array.isArray(row)&&row.length===24))triplet16SnareDynamics=saved.map(row=>row.map(v=>['ghost','normal','accent'].includes(v)?v:'normal'))}catch(e){}
 if(rhythmGrid==='triplet')snareDynamics=tripletSnareDynamics;
 if(rhythmGrid==='triplet16')snareDynamics=triplet16SnareDynamics;
-const mixedDynamicsKey='groove-lab-mixed-snare-v1';
-let mixedSnareDynamics=Array.from({length:8},()=>Array(stepCountForMixed()).fill('normal'));
-try{const saved=JSON.parse(localStorage.getItem(mixedDynamicsKey));if(saved&&JSON.stringify(saved.divisions)===JSON.stringify(mixedBeats)&&Array.isArray(saved.banks)&&saved.banks.length===8&&saved.banks.every(row=>row.length===stepCountForMixed()))mixedSnareDynamics=saved.banks}catch(e){}
+const mixedDynamicsKey='groove-lab-mixed-snare-v2';
+let mixedSnareDynamics=Array.from({length:8},()=>Array(48).fill('normal'));
+try{const saved=JSON.parse(localStorage.getItem(mixedDynamicsKey));if(saved?.length===8&&saved.every(row=>row.length===48))mixedSnareDynamics=saved;
+ else{const old=JSON.parse(localStorage.getItem('groove-lab-mixed-snare-v1'));
+ if(old?.divisions?.length===4&&old?.banks?.length===8)mixedSnareDynamics=old.banks.map(row=>expandMixed(row,old.divisions,v=>v||'normal',()=> 'normal'))}
+}catch(e){}
 if(rhythmGrid==='mixed')snareDynamics=mixedSnareDynamics;
-function saveSnareDynamics(){try{if(rhythmGrid==='mixed')localStorage.setItem(mixedDynamicsKey,JSON.stringify({divisions:mixedBeats,banks:mixedSnareDynamics}));else localStorage.setItem(rhythmGrid==='triplet16'?triplet16DynamicsKey:rhythmGrid==='triplet'?tripletDynamicsKey:dynamicsKey,JSON.stringify(snareDynamics))}catch(e){}}
+function saveSnareDynamics(){try{if(rhythmGrid==='mixed')localStorage.setItem(mixedDynamicsKey,JSON.stringify(mixedSnareDynamics));else localStorage.setItem(rhythmGrid==='triplet16'?triplet16DynamicsKey:rhythmGrid==='triplet'?tripletDynamicsKey:dynamicsKey,JSON.stringify(snareDynamics))}catch(e){}}
 function snareLevel(step){return snareDynamics[selected[1]][step]}
 function snareGain(step){return ({ghost:.24,normal:1,accent:1.38})[snareLevel(step)]||1}
 let editedSnareStep=null;
@@ -283,11 +294,14 @@ let triplet16HatBanks=Array.from({length:8},()=>Array.from({length:24},defaultHa
 try{const saved=JSON.parse(localStorage.getItem(triplet16HatKey));if(Array.isArray(saved)&&saved.length===8&&saved.every(row=>Array.isArray(row)&&row.length===24))triplet16HatBanks=saved.map(row=>row.map(v=>({type:['closed','half','open','pedal'].includes(v?.type)?v.type:'closed',level:['soft','normal','accent'].includes(v?.level)?v.level:'normal'})))}catch(e){}
 if(rhythmGrid==='triplet')hatBanks=tripletHatBanks;
 if(rhythmGrid==='triplet16')hatBanks=triplet16HatBanks;
-const mixedHatKey='groove-lab-mixed-hats-v1';
-let mixedHatBanks=Array.from({length:8},()=>Array.from({length:stepCountForMixed()},defaultHatStep));
-try{const saved=JSON.parse(localStorage.getItem(mixedHatKey));if(saved&&JSON.stringify(saved.divisions)===JSON.stringify(mixedBeats)&&Array.isArray(saved.banks)&&saved.banks.length===8&&saved.banks.every(row=>row.length===stepCountForMixed()))mixedHatBanks=saved.banks}catch(e){}
+const mixedHatKey='groove-lab-mixed-hats-v2';
+let mixedHatBanks=Array.from({length:8},()=>Array.from({length:48},defaultHatStep));
+try{const saved=JSON.parse(localStorage.getItem(mixedHatKey));if(saved?.length===8&&saved.every(row=>row.length===48))mixedHatBanks=saved;
+ else{const old=JSON.parse(localStorage.getItem('groove-lab-mixed-hats-v1'));
+ if(old?.divisions?.length===4&&old?.banks?.length===8)mixedHatBanks=old.banks.map(row=>expandMixed(row,old.divisions,v=>({...v}),defaultHatStep))}
+}catch(e){}
 if(rhythmGrid==='mixed')hatBanks=mixedHatBanks;
-function saveHats(){try{if(rhythmGrid==='mixed')localStorage.setItem(mixedHatKey,JSON.stringify({divisions:mixedBeats,banks:mixedHatBanks}));else localStorage.setItem(rhythmGrid==='triplet16'?triplet16HatKey:rhythmGrid==='triplet'?tripletHatKey:hatKey,JSON.stringify(hatBanks))}catch(e){}}
+function saveHats(){try{if(rhythmGrid==='mixed')localStorage.setItem(mixedHatKey,JSON.stringify(mixedHatBanks));else localStorage.setItem(rhythmGrid==='triplet16'?triplet16HatKey:rhythmGrid==='triplet'?tripletHatKey:hatKey,JSON.stringify(hatBanks))}catch(e){}}
 const currentHat=step=>hatBanks[selected[0]][step];
 const hatVelocity=step=>({soft:.38,normal:1,accent:1.35})[currentHat(step).level]||1;
 let editedHatStep=null;
@@ -319,17 +333,13 @@ function seq(){
   mute.setAttribute('aria-pressed',String(trackMuted[r]));
   mute.onclick=()=>setTrackMute(r);
   row.append(mute);
-  let group=document.createElement('div');
   const counts=rhythmGrid==='mixed'?mixedBeats:Array(4).fill(subdivisions());
-  let currentBeat=0,firstStep=0;
-  function appendBeatGroup(){
-   group=document.createElement('div');group.className='beat-slice';
-   group.style.gridTemplateColumns='repeat('+counts[currentBeat]+',minmax(0,1fr))';
-   row.append(group);
-  }
-  appendBeatGroup();
-  a.forEach((hit,i)=>{
-   const b=document.createElement('button');
+  for(let beat=0;beat<4;beat++){
+   const group=document.createElement('div');group.className='beat-slice';
+   group.style.gridTemplateColumns='repeat('+counts[beat]+',minmax(0,1fr))';row.append(group);
+   const visible=rhythmGrid==='mixed'?offsets(counts[beat]).map(t=>beat*12+t):Array.from({length:counts[beat]},(_,j)=>beat*counts[beat]+j);
+   visible.forEach(i=>{const hit=a[i];
+   const b=document.createElement('button');b.dataset.step=String(i);
    const level=r===1&&hit?snareLevel(i):'normal';
    const hat=r===0&&hit?currentHat(i):null;
    b.className='step'+(hit?' hit':'')+(i===shownStep?' current':'')+(r===1&&hit?' '+level:'');
@@ -355,9 +365,15 @@ function seq(){
     b.addEventListener('contextmenu',e=>{e.preventDefault();cancelLong();suppressClick=true;openEditor()});
     b.onclick=()=>{if(suppressClick){suppressClick=false;return}a[i]=!a[i];saveVariations();seq();score()};
    }else b.onclick=()=>{a[i]=!a[i];saveVariations();seq();score()};
-   if(i>=firstStep+counts[currentBeat]){firstStep+=counts[currentBeat];currentBeat++;appendBeatGroup()}
-   group.append(b);
-  });
+    group.append(b);
+   });
+   if(rhythmGrid==='mixed'){
+    const hidden=Array.from({length:12},(_,j)=>beat*12+j).filter(i=>a[i]&&!visible.includes(i));
+    if(hidden.length){const note=document.createElement('button');note.className='off-grid';note.textContent='+'+hidden.length;
+     note.title='מכות מחוץ לרשת; לחצו להצגת מיקום';
+     note.onclick=()=>alert(names[r]+' · פעמה '+(beat+1)+'\nמכות מחוץ לרשת ב־'+hidden.map(i=>(i%12+1)+'/12').join(', ')+'\nהחלוקה אינה משנה אותן.');group.append(note)}
+   }
+  }
   host.append(row);
  });
  const header=$('beatSelectors');header.replaceChildren();
@@ -374,8 +390,31 @@ function seq(){
  });
 
 }
+function mixedScore(){
+ const host=$('score'),ns='http://www.w3.org/2000/svg';host.replaceChildren();
+ const svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 900 175');svg.style.width='100%';svg.style.height='auto';
+ const line=(x1,y1,x2,y2,color='#bdc6cd',width=1)=>{const el=document.createElementNS(ns,'line');Object.entries({x1,y1,x2,y2,stroke:color,'stroke-width':width}).forEach(([k,v])=>el.setAttribute(k,v));svg.append(el);return el};
+ const label=(x,y,t,color='#263b4a',size=12)=>{const el=document.createElementNS(ns,'text');Object.entries({x,y,fill:color,'font-size':size,'text-anchor':'middle'}).forEach(([k,v])=>el.setAttribute(k,v));el.textContent=t;svg.append(el)};
+ const x0=65,bw=203,ys=[60,90,120];
+ [60,75,90,105,120].forEach(y=>line(x0,y,x0+bw*4,y));
+ ['HH','SN','KD'].forEach((n,i)=>label(25,ys[i]+4,n));
+ scorePositions=Array.from({length:48},(_,i)=>x0+Math.floor(i/12)*bw+(i%12)*bw/12);
+ for(let beat=0;beat<4;beat++){const x=x0+beat*bw;line(x,40,x,135,'#607481');
+ label(x+bw/2,24,'פעמה '+(beat+1)+' · '+mixedBeats[beat]+' חלוקות');
+ offsets(mixedBeats[beat]).forEach(t=>line(x+t*bw/12,43,x+t*bw/12,130,'#e4e9ec'))}
+ line(x0+bw*4,40,x0+bw*4,135,'#607481');
+ patterns.forEach((row,r)=>row.forEach((hit,i)=>{if(!hit)return;const x=scorePositions[i],y=ys[r],aligned=offsets(mixedBeats[Math.floor(i/12)]).includes(i%12);
+ if(r===0){label(x,y+5,'×',aligned?'#203441':'#b96627',20);
+ if(currentHat(i).type==='open'){const c=document.createElementNS(ns,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r','9');c.setAttribute('stroke','#203441');c.setAttribute('fill','none');svg.append(c)}}
+ else{const c=document.createElementNS(ns,'ellipse');Object.entries({cx:x,cy:y,rx:5,ry:4,fill:aligned?'#203441':'#b96627'}).forEach(([k,v])=>c.setAttribute(k,v));svg.append(c)}
+ }));
+ label(450,160,'כתום: מכות מחוץ לחלוקה הנבחרת — נשמרות ומתנגנות בזמן המקורי','#8d5128');
+ host.append(svg);scoreCursor=line(x0,37,x0,136,'#e65142',2.5);scoreCursor.setAttribute('opacity','0');markScore(shownStep);
+ $('scoreMsg').textContent='מפת מיקום מדויקת (עדיין לא תיווי קלאסי מלא).';
+}
 function score(){
  const host=$('score');host.replaceChildren();
+ if(rhythmGrid==='mixed'){mixedScore();return}
  const VF=window.Vex?.Flow;
  if(!VF){$('scoreMsg').textContent='ספריית התווים אינה זמינה. בדוק חיבור לאינטרנט.';return}
  try{
@@ -695,7 +734,7 @@ function sound(i,t){
  if($('metro').checked){
   const div=Number($('clickDivision').value);
   const clickEvery=rhythmGrid==='mixed'?1:rhythmGrid==='triplet16'?(div===4?6:div===2?3:1):rhythmGrid==='triplet'?(div===4?3:1):div;
-  if(rhythmGrid==='mixed'?(div===4?beatStarts().includes(i):div===2?(()=>{const beat=getStepBeat(i),offset=i-beatStarts()[beat];return offset===0||(mixedBeats[beat]%2===0&&offset===mixedBeats[beat]/2)})():true):i%clickEvery===0){
+  if(rhythmGrid==='mixed'?(div===4?i%12===0:div===2?i%6===0:offsets(mixedBeats[getStepBeat(i)]).includes(i%12)):i%clickEvery===0){
    const accent=$('clickAccent').checked&&i===0;
    const volume=Number($('clickVolume').value)/100;
    metronomeClick(t,accent,volume);
@@ -703,14 +742,14 @@ function sound(i,t){
  }
 }
 function markScore(s){if(!scoreCursor)return;if(s<0||!Number.isFinite(scorePositions[s])){scoreCursor.setAttribute('opacity','0');return}const x=scorePositions[s];scoreCursor.setAttribute('x1',x);scoreCursor.setAttribute('x2',x);scoreCursor.setAttribute('opacity','0.85')}
-function mark(s){shownStep=s;$('seq').querySelectorAll('.track').forEach(row=>row.querySelectorAll('.step').forEach((b,i)=>b.classList.toggle('current',i===s)));markScore(s)}
+function mark(s){shownStep=s;$('seq').querySelectorAll('.track').forEach(row=>row.querySelectorAll('.step').forEach(b=>b.classList.toggle('current',Number(b.dataset.step)===s)));markScore(s)}
 function stop(){running=false;activeOpenHats=[];pending=[null,null,null];paintVariations();rev++;clearInterval(timer);timer=null;position=0;mark(-1);$('play').textContent='▶ נגן';$('status').textContent='מוכן';if(ctx){bus.gain.setTargetAtTime(0,ctx.currentTime,.008);bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}}
 function tick(){if(!running)return;const n=rev;while(next<ctx.currentTime+.09&&running){const i=position,t=next;
   if(i===0)applyPendingVariations();
   sound(i,t);setTimeout(()=>{if(running&&rev===n){mark(i);$('status').textContent='פעמה '+(getStepBeat(i)+1)}},Math.max(0,(t-ctx.currentTime)*1000));const quarter=60/Number($('bpm').value);
  const ratio=Number($('swing').value)/100;
  // Eighth swing: two eighths per beat split by ratio, with the two sixteenths within each half evenly spaced.
- next+=rhythmGrid==='mixed'?quarter/mixedBeats[getStepBeat(i)]:rhythmGrid==='triplet16'?quarter/6:rhythmGrid==='triplet'?quarter/3:quarter*((i%4)<2?ratio/2:(1-ratio)/2);
+ next+=rhythmGrid==='mixed'?quarter/12:rhythmGrid==='triplet16'?quarter/6:rhythmGrid==='triplet'?quarter/3:quarter*((i%4)<2?ratio/2:(1-ratio)/2);
  position++;if(position===stepCount()){position=0;if(!$('loop').checked){clearInterval(timer);timer=null;setTimeout(()=>{if(rev===n)stop()},Math.max(0,(next-ctx.currentTime)*1000));break}}}}
 $('play').onclick=()=>{if(running){stop();return}if(!init())return;running=true;rev++;position=0;next=ctx.currentTime+.05;$('play').textContent='Ⅱ השהה';tick();timer=setInterval(tick,20)};
 $('stop').onclick=stop;
@@ -740,23 +779,9 @@ $('rhythmGrid').onchange=()=>{
 function changeBeatDivision(beat,division){
  if(![3,4,6].includes(division)||beat<0||beat>3)return;
  if(running)stop();
- if(rhythmGrid!=='mixed'){
-  // One shared beat subdivision selector controls all three instruments.
-  rhythmGrid='mixed';
-  $('rhythmGrid').value='mixed';
-  instrumentBanks=mixedBanks;snareDynamics=mixedSnareDynamics;hatBanks=mixedHatBanks;
-  try{localStorage.setItem(gridKey,rhythmGrid)}catch(e){}
- }
- if(mixedBeats[beat]===division){syncRhythmSettings();seq();score();return}
- const updated=mixedBeats.slice();updated[beat]=division;
- const old=mixedBeats.slice(),oldStarts=beatStarts(),oldBanks=mixedBanks,oldSnare=mixedSnareDynamics,oldHats=mixedHatBanks;
- const transform=row=>updated.flatMap((count,b)=>Array.from({length:count},(_,j)=>row[oldStarts[b]+Math.min(old[b]-1,Math.round(j*old[b]/count))]));
- mixedBeats=updated;mixedDefaults=makeMixedDefaults();
- mixedBanks=oldBanks.map(bank=>bank.map(transform));
- mixedSnareDynamics=oldSnare.map(transform);
- mixedHatBanks=oldHats.map(bank=>transform(bank).map(v=>({...v})));
- instrumentBanks=mixedBanks;snareDynamics=mixedSnareDynamics;hatBanks=mixedHatBanks;
- saveVariations();saveSnareDynamics();saveHats();
+ if(rhythmGrid!=='mixed'){rhythmGrid='mixed';$('rhythmGrid').value='mixed';instrumentBanks=mixedBanks;snareDynamics=mixedSnareDynamics;hatBanks=mixedHatBanks;
+ try{localStorage.setItem(gridKey,'mixed')}catch(e){}}
+ mixedBeats[beat]=division;
  try{localStorage.setItem(mixedBeatKey,JSON.stringify(mixedBeats))}catch(e){}
  refreshPatterns();syncRhythmSettings();seq();score();
 }
