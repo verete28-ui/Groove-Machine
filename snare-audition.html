@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Groove Lab | Snare Audition</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#101419;color:#edf5f6;font-family:system-ui,Arial,sans-serif;padding:16px}main{max-width:680px;margin:auto}h1{font-size:22px;margin:12px 0}p{color:#b9cbd3;font-size:14px;line-height:1.6}section{background:#1d2830;padding:14px;border-radius:12px;margin:12px 0;border:1px solid #35505d}h2{font-size:15px;margin:7px 0 12px;color:#ffe07f}.item{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #3b4e58;padding:11px 0}.item span{font-size:14px}.item small{display:block;color:#aec4ce;font-size:12px;margin-top:2px}button{cursor:pointer;background:#23748c;color:white;border:1px solid #66b4c7;border-radius:9px;padding:11px 15px;min-width:75px;font-size:15px;font-weight:700;touch-action:manipulation}button:disabled{opacity:.5}.selected{background:#b89124;border-color:#ffdd67;color:#15191b}.levels{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.levels button{min-width:43px;padding:8px 10px}.status{margin:12px 0;min-height:42px;background:#253540;border-radius:8px;padding:11px;color:#d8eaf0;font-size:13px}.links a{color:#92e2f5}</style></head>
+<body><main><h1>🥁 השוואת סנרים — AVL</h1>
+<p>נגן השוואה עצמאי, מחוץ לממשק הצ'אט. כל לחיצה טוענת ומנגנת דגימת FLAC מקורית דרך מנוע האודיו של הדפדפן. אין כאן סינתזה או אפקטים.</p>
+<section><strong>עוצמת המכה המוקלטת</strong><div class="levels" id="levels"></div><p>מומלץ להתחיל ב־4. כפתורי הרמות מחליפים בין הקלטות אמיתיות ולא רק משנים ווליום.</p></section>
+<section><h2>מכה רגילה</h2><div id="normal"></div></section>
+<section><h2>מכה בקצה העור</h2><div id="edge"></div></section>
+<section><h2>Side Stick / Rim Click</h2><div id="rim"></div></section>
+<div class="status" role="status" aria-live="polite" id="status">מוכן. לחץ ▶ להשמעה.</div>
+<p class="links">מקור הקבצים: <a href="https://github.com/studiorack/avl-drumkits">AVL Drumkits</a>. אם השמעה נכשלת, תוצג הודעה במקום להשמיע צליל חלופי.</p></main>
+<script>
+(()=>{
+const sections={normal:[["Pearl Snare","38-PearlSnare","Black Pearl"],["Pearl Snare 2","38-PearlSnare2","מערכת שנייה"],["Porkpie","38-PorkpieSnare","סנר מסוג Porkpie"]],edge:[["Pearl Edge","40-PearlSnareEdge","קצה העור"],["Pearl 2 Edge","40-PearlSnare2Edge","סנר שני"],["Porkpie Edge","40-PorkpieSnareEdge","קצה העור"]],rim:[["Side Stick","37-SideStick","רימקליק / Cross-stick"]]};
+const $=id=>document.getElementById(id), status=$("status"), cache=new Map();
+let level=4,ctx=null,source=null;
+function setStatus(s){status.textContent=s}
+for(const [group,items] of Object.entries(sections)){
+ for(const [name,prefix,description] of items){
+ const row=document.createElement("div");row.className="item";
+ const label=document.createElement("span");label.textContent=name;
+ const sub=document.createElement("small");sub.textContent=description;label.append(sub);
+ const button=document.createElement("button");button.textContent="▶ נגן";button.setAttribute("aria-label","נגן "+name);
+ button.addEventListener("click",()=>playSample(prefix,name,button));
+ row.append(label,button);$(group).append(row);
+ }
+}
+function redraw(){
+ $("levels").replaceChildren();
+ for(let i=1;i<=5;i++){const b=document.createElement("button");b.textContent=i;b.className=i===level?"selected":"";b.onclick=()=>{level=i;redraw();setStatus("רמה "+i+" נבחרה")};$("levels").append(b)}
+}
+async function playSample(prefix,name,button){
+ button.disabled=true;
+ const key=prefix+"-"+level+".flac";
+ setStatus("טוען "+name+" · רמה "+level+"…");
+ try{
+  if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();
+  await ctx.resume();
+  let buffer=cache.get(key);
+  if(!buffer){
+   const urls=["https://raw.githubusercontent.com/studiorack/avl-drumkits/main/Samples/"+key,"https://cdn.jsdelivr.net/gh/studiorack/avl-drumkits@main/Samples/"+key];
+   let lastError=null;
+   for(const url of urls){try{
+    const r=await fetch(url);if(!r.ok)throw Error("HTTP "+r.status);
+    buffer=await ctx.decodeAudioData(await r.arrayBuffer());break;
+   }catch(e){lastError=e}}
+   if(!buffer)throw lastError||Error("טעינת דגימה נכשלה");
+   cache.set(key,buffer);
+  }
+  if(source){try{source.stop()}catch(e){}}
+  source=ctx.createBufferSource();source.buffer=buffer;
+  const gain=ctx.createGain();gain.gain.value=.95;
+  source.connect(gain);gain.connect(ctx.destination);source.start();
+  setStatus("▶ "+name+" · רמה "+level+" · הקלטה מקורית");
+ }catch(e){setStatus("⚠ לא ניתן לנגן: "+e.message+". ייתכן שהטלפון לא תומך ב־FLAC דרך Web Audio.")}
+ finally{button.disabled=false}
+}
+redraw();
+})();
+</script></body></html>

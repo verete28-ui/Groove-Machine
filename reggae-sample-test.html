@@ -1,0 +1,58 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reggae Resonance | Test</title>
+<style>:root{color-scheme:dark}*{box-sizing:border-box}body{background:#101719;color:#eaf1ee;font:15px system-ui,Arial;margin:0;padding:16px}main{max-width:540px;margin:auto}h1{font-size:22px}p{line-height:1.6;color:#b7d0c8}button{background:#17846b;color:white;border:1px solid #74d7b5;padding:17px 12px;font-size:16px;font-weight:bold;border-radius:10px;cursor:pointer;width:100%;margin:7px 0}button:disabled{opacity:.5}section{background:#1a2a2c;border:1px solid #436b66;border-radius:12px;padding:14px;margin:14px 0}input{width:100%;accent-color:#4cdbaf}#status{background:#26383b;border-radius:8px;padding:12px;min-height:44px}a{color:#a1e7d2}</style></head>
+<body><main><h1>🥁 Salamander · בדיקת סנר ורים</h1>
+<p>שתי הקלטות מקוריות בלבד. אין צורך לחכות לטעינת מערכת שלמה. לחץ על אחד הכפתורים כדי להתחיל.</p>
+<section><button id="snare">▶ סנר פתוח</button><button id="rim">▶ סנר + חישוק + ריוורב</button>
+<label>כמות ריוורב <b id="amount">45%</b><input id="rev" type="range" min="0" max="100" step="5" value="45"></label></section>
+<div id="status" role="status" aria-live="polite">מוכן להשמעה.</div>
+<p>דגימות: <a href="https://github.com/studiorack/salamander-drumkit">Salamander Drumkit</a> ברישיון CC BY-SA 3.0. ה״רים״ הוא שילוב של סנר ו־Cross Stick, לא Rimshot מוקלט נפרד.</p></main>
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+let ctx=null, bus=null, send=null, source=null, active=0;
+const cache=new Map(),requests=new Map();
+const urls=['https://cdn.jsdelivr.net/gh/studiorack/salamander-drumkit@master/Samples/','https://raw.githubusercontent.com/studiorack/salamander-drumkit/master/Samples/'];
+function status(s){$('status').textContent=s}
+function ready(){
+ if(!ctx){ctx=new(window.AudioContext||window.webkitAudioContext)();bus=ctx.createGain();bus.gain.value=.75;bus.connect(ctx.destination);
+  send=ctx.createGain();const con=ctx.createConvolver(),count=Math.floor(ctx.sampleRate*1.45),imp=ctx.createBuffer(2,count,ctx.sampleRate);
+  for(let c=0;c<2;c++){const x=imp.getChannelData(c);for(let i=0;i<count;i++)x[i]=(Math.random()*2-1)*Math.pow(1-i/count,2.5)}
+  con.buffer=imp;const filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=4200;const wet=ctx.createGain();wet.gain.value=.48;
+  send.connect(con);con.connect(filter);filter.connect(wet);wet.connect(bus);
+ }
+ return ctx.resume()
+}
+async function load(name){
+ if(cache.has(name))return cache.get(name);
+ if(requests.has(name))return requests.get(name);
+ const promise=(async()=>{
+  let last;
+  for(const root of urls){try{const response=await fetch(root+name);if(!response.ok)throw Error('HTTP '+response.status);const decoded=await ctx.decodeAudioData(await response.arrayBuffer());cache.set(name,decoded);return decoded}catch(e){last=e}}
+  throw last;
+ })();
+ requests.set(name,promise);
+ try{return await promise}finally{requests.delete(name)}
+}
+function hit(buffer,t,vol,reverb){
+ const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;gain.gain.value=vol;source.connect(gain);gain.connect(bus);
+ if(reverb){const wet=ctx.createGain();wet.gain.value=reverb;gain.connect(wet);wet.connect(send)}source.start(t);return source;
+}
+async function play(isRim){
+ const id=++active;const button=$(isRim?'rim':'snare');button.disabled=true;
+ try{
+  await ready();status('טוען דגימת סנר…');
+  const snare=await load('snare_OH_F_1.flac');
+  const stick=isRim?(status('טוען דגימת חישוק…'),await load('snareStick_OH_F_1.flac')):null;
+  if(active!==id)return;
+  await ctx.resume();
+  const t=ctx.currentTime+.035,r=Number($('rev').value)/100;
+  hit(snare,t,.75,isRim?.12*r:.08*r);
+  if(stick)hit(stick,t,.67,.82*r);
+  status('▶ '+(isRim?'חישוק וריוורב':'סנר פתוח')+' · הושמע');
+ }catch(e){status('⚠ טעינת הצליל נכשלה: '+e.message)}
+ finally{button.disabled=false}
+}
+$('snare').onclick=()=>play(false);$('rim').onclick=()=>play(true);
+$('rev').oninput=()=>{$('amount').textContent=$('rev').value+'%'};
+})();
+</script></body></html>
