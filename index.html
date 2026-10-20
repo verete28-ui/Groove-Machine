@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 2.0</title>
+<title>Groove Lab 2.1</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -23,13 +23,19 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .track .mute.is-muted{background:#753e42;border-color:#cf7679}
 .track.is-muted .step.hit{background:#476372}
 .track .mute:focus-visible{outline:2px solid #fff}
+.step.ghost{background:#466f84;color:#fff;font-size:10px}.step.accent{background:#10bddb;color:#101821;font-weight:900;font-size:13px}
+#snareEditor{position:fixed;inset:0;background:#0009;z-index:20;display:flex;align-items:center;justify-content:center;padding:16px}
+#snareEditor[hidden]{display:none}
+#snareEditor .editor-content{background:#20323e;border:1px solid #628096;border-radius:14px;width:min(330px,100%);padding:16px;display:grid;gap:9px}
+#snareEditor .editor-content button{width:100%;text-align:right}
+
 .step{min-width:0;aspect-ratio:1;padding:0;border-radius:4px;background:#2a3b48}.step.hit{background:#22a6c9}.step.current{outline:2px solid white}
 .beats{display:grid;grid-template-columns:71px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
 #score{direction:ltr;overflow:hidden;background:#fff;color:#17212a;border-radius:8px;min-height:0;width:100%}#score svg{display:block;width:100%;height:auto;max-width:100%}
 .variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">2.0</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">2.1</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
@@ -56,10 +62,17 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 <details class="fold" id="practiceFold" open><summary>🥁 תרגול — סיקוונסר / תווים</summary><div class="fold-body">
 <div class="line" style="margin:0 0 12px 0"><span class="small">סאונד התופים</span><label class="small" style="display:flex;align-items:center;gap:7px"><input type="checkbox" id="drumsEnabled" checked> 🔊 הפעל תופים</label></div>
 <div class="tabs"><button class="active" data-view="seq">סיקוונסר</button><button data-view="score">תווים</button></div>
-<section class="panel"><div id="seq" class="grid"></div><div id="scoreWrap" class="hide"><div id="score"></div><p id="scoreMsg" class="small">תיווי לתרגול · קריאה בלבד</p></div>
+<section class="panel"><div id="seq" class="grid"></div><p class="small">סנר: לחיצה רגילה להפעלה/כיבוי; לחיצה ארוכה לבחירת Ghost / רגיל / מודגש. במחשב: לחצן ימני.</p><div id="scoreWrap" class="hide"><div id="score"></div><p id="scoreMsg" class="small">תיווי לתרגול · קריאה בלבד</p></div>
 </section></div></details>
 
 <p class="small">לחיצה על משבצת עורכת את המקצב. שתי התצוגות חולקות את אותם נתונים. לכל כלי שמונה תבניות בעלות אופי ריתמי שונה. בחר A–H בנפרד להיי־האט, סנר ובס. עריכת הסיקוונסר משנה רק את הווריאציה הפעילה של אותו כלי. ההגדרות נשמרות בדפדפן. אפשר להשתיק כל כלי בנפרד דרך סמל הרמקול לידו, או את כל התופים ולהשמיע רק קליק. רנדומייז בוחר שילוב חדש של וריאציות לכל שלושת הכלים. בהגדרות אפשר לבחור ערכת סמפלים או צליל סינתטי; אם הסמפלים אינם זמינים, המנוע חוזר אוטומטית לסינתזה.</p>
+<div id="snareEditor" hidden role="dialog" aria-modal="true" aria-label="עוצמת סנר">
+<div class="editor-content"><strong id="snareEditorTitle">עוצמת מכה בסנר</strong>
+<button data-snare-level="ghost">g · Ghost — חלש</button>
+<button data-snare-level="normal">● · מכה רגילה</button>
+<button data-snare-level="accent">> · מכה מודגשת</button>
+<button data-snare-level="off">– · ללא מכה</button>
+<button id="closeSnareEditor">סגור</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
 <script>
 (()=>{
@@ -175,6 +188,22 @@ const muteStorageKey='groove-lab-track-mutes-v1';
 let trackMuted=[false,false,false];
 try{const saved=JSON.parse(localStorage.getItem(muteStorageKey));if(Array.isArray(saved)&&saved.length===3)trackMuted=saved.map(Boolean)}catch(e){}
 function setTrackMute(r){trackMuted[r]=!trackMuted[r];try{localStorage.setItem(muteStorageKey,JSON.stringify(trackMuted))}catch(e){};seq()}
+const dynamicsKey='groove-lab-snare-dynamics-v1';
+let snareDynamics=Array.from({length:8},()=>Array(16).fill('normal'));
+try{const saved=JSON.parse(localStorage.getItem(dynamicsKey));if(Array.isArray(saved)&&saved.length===8&&saved.every(row=>Array.isArray(row)&&row.length===16)){snareDynamics=saved.map(row=>row.map(v=>['ghost','normal','accent'].includes(v)?v:'normal'))}}catch(e){}
+function saveSnareDynamics(){try{localStorage.setItem(dynamicsKey,JSON.stringify(snareDynamics))}catch(e){}}
+function snareLevel(step){return snareDynamics[selected[1]][step]}
+function snareGain(step){return ({ghost:.24,normal:1,accent:1.38})[snareLevel(step)]||1}
+let editedSnareStep=null;
+function openSnareEditor(step){editedSnareStep=step;$('snareEditorTitle').textContent='סנר · צעד '+(step+1);$('snareEditor').hidden=false}
+function closeSnareEditor(){editedSnareStep=null;$('snareEditor').hidden=true}
+function assignSnareLevel(level){
+ if(editedSnareStep===null)return;
+ const step=editedSnareStep;
+ if(level==='off')patterns[1][step]=false;
+ else{patterns[1][step]=true;snareDynamics[selected[1]][step]=level}
+ saveVariations();saveSnareDynamics();closeSnareEditor();seq();score();
+}
 let ctx,bus,running=false,timer=null,position=0,next=0,rev=0,shownStep=-1,scorePositions=[],scoreCursor=null;
 function seq(){
  const host=$('seq');host.replaceChildren();
@@ -190,9 +219,24 @@ function seq(){
   row.append(mute);
   a.forEach((hit,i)=>{
    const b=document.createElement('button');
-   b.className='step'+(hit?' hit':'')+(i===shownStep?' current':'');
+   const level=r===1&&hit?snareLevel(i):'normal';
+   b.className='step'+(hit?' hit':'')+(i===shownStep?' current':'')+(r===1&&hit?' '+level:'');
+   if(r===1&&hit&&level!=='normal')b.textContent=level==='ghost'?'g':'>';
    b.setAttribute('aria-label',names[r]+' step '+(i+1));
-   b.onclick=()=>{a[i]=!a[i];saveVariations();seq();score()};
+   if(r===1){
+    let longTimer=null,suppressClick=false;
+    b.addEventListener('pointerdown',e=>{
+     if(e.button!==0)return;
+     suppressClick=false;
+     longTimer=setTimeout(()=>{longTimer=null;suppressClick=true;openSnareEditor(i)},520);
+    });
+    const cancelLong=()=>{if(longTimer!==null){clearTimeout(longTimer);longTimer=null}};
+    b.addEventListener('pointerup',cancelLong);
+    b.addEventListener('pointercancel',cancelLong);
+    b.addEventListener('pointerleave',cancelLong);
+    b.addEventListener('contextmenu',e=>{e.preventDefault();cancelLong();suppressClick=true;openSnareEditor(i)});
+    b.onclick=()=>{if(suppressClick){suppressClick=false;return}a[i]=!a[i];saveVariations();seq();score()};
+   }else b.onclick=()=>{a[i]=!a[i];saveVariations();seq();score()};
    row.append(b);
   });
   host.append(row);
@@ -213,7 +257,7 @@ function score(){
   stave.setContext(c).draw();
   // A single complete rhythmic voice: every attack in the sequencer is represented.
   // Rests describe silence of the entire kit, never silence of an individual drum.
-  const notes=[],beamGroups=[],stepsOfNotes=[];
+  const notes=[],beamGroups=[],stepsOfNotes=[],snareMarks=[];
   const durations={1:'16',2:'8',4:'q'};
   const anyHit=i=>patterns.some(row=>row[i]);
   for(let beat=0;beat<4;beat++){
@@ -231,6 +275,7 @@ function score(){
      stem_direction:1
     });
     notes.push(n);stepsOfNotes.push(at);beatNotes.push({note:n,rest,length});
+    if(!rest&&patterns[1][at]&&snareLevel(at)!=='normal')snareMarks.push({note:n,level:snareLevel(at)});
    };
    const start=beat*4;
    // Align to both eighth-note subdivisions in EVERY beat, including beat four.
@@ -281,6 +326,18 @@ function score(){
    scoreCursor.setAttribute('stroke','#e65142');scoreCursor.setAttribute('stroke-width','2.5');
    scoreCursor.setAttribute('opacity','0');scoreCursor.setAttribute('pointer-events','none');
    svg.appendChild(scoreCursor);
+   // Small dynamic cues in the score, kept outside the time-signature and staff notes.
+   snareMarks.forEach(({note,level})=>{
+    const mark=document.createElementNS('http://www.w3.org/2000/svg','text');
+    mark.setAttribute('x',note.getAbsoluteX());
+    mark.setAttribute('y','143');
+    mark.setAttribute('font-size','13');
+    mark.setAttribute('font-weight','bold');
+    mark.setAttribute('text-anchor','middle');
+    mark.setAttribute('fill','#242b33');
+    mark.textContent=level==='ghost'?'g':'>';
+    svg.appendChild(mark);
+   });
    markScore(shownStep);
   }
   $('scoreMsg').textContent='תיווי בסנכרון עם הנגן · הפסקות מדויקות גם בפעמה 4';
@@ -326,7 +383,7 @@ function ensureSamples(kit=$('soundKit').value){
 function updateSampleStatus(message){
  $('sampleStatus').textContent=message||($('soundKit').value==='synth'?'צלילים סינתטיים':isReady($('soundKit').value)?'✓ סמפלים מוקלטים פעילים':'סמפלים עדיין לא נטענו');
 }
-function sampleHit(key,time,kit){
+function sampleHit(key,time,kit,velocity=1){
  const set=chosenSet(kit),buffers=sampleBuffers[set]?.[key];
  if(!buffers?.length)return false;
  const src=ctx.createBufferSource(),gain=ctx.createGain();
@@ -335,13 +392,13 @@ function sampleHit(key,time,kit){
  src.buffer=buffer;
  const isDub=kit==='dub',isAcoustic=kit==='acoustic';
  const level=isAcoustic?({hh:.34,sn:.58,kd:.78}[key]):isDub?({hh:.32,sn:.52,kd:.75}[key]):({hh:.43,sn:.66,kd:.85}[key]);
- gain.gain.setValueAtTime(level,time);
+ gain.gain.setValueAtTime(level*velocity,time);
  let end=buffer.duration,output=gain;
  if(isDub){
   const filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=key==='hh'?4200:key==='sn'?3500:1900;
   src.connect(filter);filter.connect(gain);
   end=Math.min(buffer.duration,key==='hh'?.25:key==='sn'?.38:.70);
-  gain.gain.setValueAtTime(level,time+Math.max(.001,end-.045));
+  gain.gain.setValueAtTime(level*velocity,time+Math.max(.001,end-.045));
   gain.gain.exponentialRampToValueAtTime(.001,time+end);
  }else {
   // Keep the original recorded transient and full natural decay.
@@ -372,7 +429,10 @@ function sound(i,t){
   const kit=$('soundKit').value;
   const sample=kit!=='synth';
   if(!trackMuted[0]&&patterns[0][i]&&(!sample||!sampleHit('hh',t,kit)))noise(t,.045,6400,.24);
-  if(!trackMuted[1]&&patterns[1][i]&&(!sample||!sampleHit('sn',t,kit))){noise(t,.13,1100,.48);tone(t,170,.07,.15)}
+  if(!trackMuted[1]&&patterns[1][i]){
+   const velocity=snareGain(i);
+   if(!sample||!sampleHit('sn',t,kit,velocity)){noise(t,.13,1100,.48*velocity);tone(t,170,.07,.15*velocity)}
+  }
   if(!trackMuted[2]&&patterns[2][i]&&(!sample||!sampleHit('kd',t,kit)))tone(t,145,.24,.85,43);
  }
  if($('metro').checked){
@@ -436,6 +496,10 @@ $('copyVar').onclick=()=>{
  saveVariations();
  $('variationStatus').textContent='הועתק '+['HH','SN','KD'][r]+' אל '+ 'ABCDEFGH'[dest];
 };
+$('snareEditor').querySelectorAll('[data-snare-level]').forEach(b=>b.onclick=()=>assignSnareLevel(b.dataset.snareLevel));
+$('closeSnareEditor').onclick=closeSnareEditor;
+$('snareEditor').onclick=e=>{if(e.target===$('snareEditor'))closeSnareEditor()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('snareEditor').hidden)closeSnareEditor()});
 paintVariations();seq();window.addEventListener('load',score);
 })();
 </script><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת.</p></main></html>
