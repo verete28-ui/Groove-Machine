@@ -42,6 +42,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .beat-slice{position:relative}.off-grid{position:absolute;top:100%;left:0;padding:1px 4px;background:#aa6731;border:0;border-radius:5px;font-size:10px;min-height:14px;z-index:2}
 .track:has(.off-grid){margin-bottom:24px}
 .beats{display:grid;grid-template-columns:71px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
+.score-bar-panel{border:1px solid #71818a;border-radius:9px;padding:5px;margin-bottom:10px;overflow:hidden}.score-bar-panel.is-active{border:2px solid #25b5cf}.score-bar-heading{direction:rtl;font-size:12px;font-weight:700;margin:0 3px 3px;color:#394854}
 #score{direction:ltr;overflow:hidden;background:#fff;color:#17212a;border-radius:8px;min-height:0;width:100%}#score svg{display:block;width:100%;height:auto;max-width:100%}
 .variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variation-length{padding:3px 4px;min-height:27px;border-radius:5px;font-size:11px;background:#354856;border:1px solid #607e89;color:#ecf4f6}.variation-length.is-two{background:#086579;border-color:#2bb5cc}.variation-cell{display:flex;flex-direction:column;gap:3px;min-width:0}.variation-cell>.variation-btn{min-height:40px;padding:5px 2px}
 .bar-panel{border:1px solid #54707d;border-radius:10px;padding:7px 5px;margin:8px 0;min-width:0}.bar-panel.is-active{border:2px solid #2bb5cc;background:#19333d}.bar-panel .track{margin:10px 0}
@@ -374,6 +375,18 @@ function hatAt(step,bar=0){return bar===1&&variationLength(0)===2?(ensureSecond(
 function snareRowAt(bar=0){return bar===1&&variationLength(1)===2?(ensureSecond(1,selected[1]),secondData().snare[selected[1]]):snareDynamics[selected[1]]}
 function hatRowAt(bar=0){return bar===1&&variationLength(0)===2?(ensureSecond(0,selected[0]),secondData().hats[selected[0]]):hatBanks[selected[0]]}
 let playingBar=0,shownBar=0;
+let scoreBarContext=0,scoreHost=null,scorePositionsByBar=[],scoreCursorsByBar=[];
+function score(){
+ const root=$('score');root.replaceChildren();scorePositionsByBar=[];scoreCursorsByBar=[];
+ for(let bar=0,total=cycleBars();bar<total;bar++){
+  scoreBarContext=bar;
+  const panel=document.createElement('div');panel.className=total===2?'score-bar-panel':'score-single';panel.dataset.bar=String(bar);
+  if(total===2){const title=document.createElement('div');title.className='score-bar-heading';title.textContent='תיבה '+(bar+1);panel.append(title)}
+  const drawing=document.createElement('div');panel.append(drawing);root.append(panel);scoreHost=drawing;
+  renderScoreBar();scorePositionsByBar[bar]=scorePositions.slice();scoreCursorsByBar[bar]=scoreCursor;
+ }
+ markScore(shownStep,shownBar);
+}
 let ctx,bus,running=false,timer=null,position=0,next=0,rev=0,shownStep=-1,scorePositions=[],scoreCursor=null;
 function seq(){
  const host=$('seq');host.replaceChildren();
@@ -448,7 +461,9 @@ function seq(){
 
 }
 function mixedScore(){
- const host=$('score');host.replaceChildren();
+ const patterns=barPatterns(scoreBarContext),snareLevel=step=>snareLevelAt(step,scoreBarContext),currentHat=step=>hatAt(step,scoreBarContext);
+ const mixedBeats=beatDivisionsForBar(scoreBarContext);
+ const host=scoreHost;host.replaceChildren();
  const VF=window.Vex?.Flow;
  if(!VF){$('scoreMsg').textContent='ספריית התווים אינה זמינה';return}
  try{
@@ -554,15 +569,17 @@ function mixedScore(){
    scoreCursor.setAttribute('y1','18');scoreCursor.setAttribute('y2','139');
    scoreCursor.setAttribute('stroke','#e65142');scoreCursor.setAttribute('stroke-width','2.5');
    scoreCursor.setAttribute('opacity','0');scoreCursor.setAttribute('pointer-events','none');svg.append(scoreCursor);
-   markScore(shownStep);
+   
   }
   $('scoreMsg').textContent=detailed
    ?'תיווי ריתמי מלא: בפעימות עם מכות מחוץ לרשת מוצגת חלוקת 12 לשמירת התזמון (מסומנות ב־*).'
    :'תיווי ריתמי: טריולות של שמיניות ושש־עשריות עם סימון 3.';
  }catch(e){console.error('Mixed notation:',e);$('scoreMsg').textContent='שגיאה בתיווי: '+e.message}
 }
-function score(){
- const host=$('score');host.replaceChildren();
+function renderScoreBar(){
+ const patterns=barPatterns(scoreBarContext),snareLevel=step=>snareLevelAt(step,scoreBarContext),currentHat=step=>hatAt(step,scoreBarContext);
+ const mixedBeats=beatDivisionsForBar(scoreBarContext);
+ const host=scoreHost;host.replaceChildren();
  if(rhythmGrid==='mixed'){mixedScore();return}
  const VF=window.Vex?.Flow;
  if(!VF){$('scoreMsg').textContent='ספריית התווים אינה זמינה. בדוק חיבור לאינטרנט.';return}
@@ -758,7 +775,7 @@ function score(){
     mark.textContent=level==='ghost'?'g':'>';
     svg.appendChild(mark);
    });
-   markScore(shownStep);
+   
   }
   $('scoreMsg').textContent='תיווי בסנכרון עם הנגן · הפסקות מדויקות גם בפעמה 4';
  }catch(e){$('scoreMsg').textContent='שגיאה בתיווי: '+e.message}
@@ -890,7 +907,14 @@ function sound(i,t){
   }
  }
 }
-function markScore(s){if(!scoreCursor)return;if(s<0||!Number.isFinite(scorePositions[s])){scoreCursor.setAttribute('opacity','0');return}const x=scorePositions[s];scoreCursor.setAttribute('x1',x);scoreCursor.setAttribute('x2',x);scoreCursor.setAttribute('opacity','0.85')}
+function markScore(s,bar=shownBar){
+ scoreCursorsByBar.forEach((cursor,b)=>{
+  if(!cursor)return;
+  if(b!==bar||s<0||!Number.isFinite(scorePositionsByBar[b]?.[s])){cursor.setAttribute('opacity','0');return}
+  const x=scorePositionsByBar[b][s];cursor.setAttribute('x1',x);cursor.setAttribute('x2',x);cursor.setAttribute('opacity','0.85');
+ });
+ $('score').querySelectorAll('.score-bar-panel').forEach(node=>node.classList.toggle('is-active',Number(node.dataset.bar)===bar));
+}
 function mark(s){shownStep=s;$('seq').querySelectorAll('.track').forEach(row=>row.querySelectorAll('.step').forEach(b=>b.classList.toggle('current',Number(b.dataset.step)===s)));markScore(s)}
 function stop(){running=false;applyQueuedBeatDivisions();activeOpenHats=[];pending=[null,null,null];paintVariations();rev++;clearInterval(timer);timer=null;position=0;mark(-1);$('play').textContent='▶ נגן';$('status').textContent='מוכן';if(ctx){bus.gain.setTargetAtTime(0,ctx.currentTime,.008);bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}}
 function tick(){if(!running)return;const n=rev;while(next<ctx.currentTime+.09&&running){const i=position,t=next;
