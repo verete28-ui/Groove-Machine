@@ -1,23 +1,30 @@
 
 window.GROOVE_MACHINE={"storagePrefix":"one-drop-preview-v2","labels":[["שמיניות","Spang-a-lang ישר","Three Little Birds · קל","Three Little Birds · מקור","קישוט 16","קישוט בסוף","שינוי קצר","שמיניות בסיס"],["One Drop","One Drop","One Drop","One Drop","One Drop","One Drop","One Drop","One Drop"],["One Drop","One Drop","One Drop","One Drop","One Drop","One Drop","One Drop","One Drop"]],"presets":[[[true,false,true,false,true,false,true,false,true,false,true,false,true,false,true,false],[true,false,false,false,true,false,true,false,true,false,false,false,true,false,true,false],[true,false,false,false,true,false,false,false,true,false,false,false,true,false,false,false],[true,false,false,false,true,false,false,false,true,false,true,false,true,false,false,false],[true,false,true,false,true,false,true,false,true,false,true,false,true,true,true,false],[true,false,true,false,true,false,true,false,true,false,true,false,true,false,true,true],[true,false,true,false,true,false,true,false,true,true,true,false,true,false,true,false],[true,false,true,false,true,false,true,false,true,false,true,false,true,false,true,false]],[[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false]],[[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false]]]};
+
 (()=>{
-const p="one-drop-preview-v2", draft=[{"id":"H3","name":"Three Little Birds — simplified","bars":[{"hits":[0,2,4,6],"open":[6],"accent":[]},{"hits":[0,2,3,4,6],"open":[3],"accent":[]}]},{"id":"H4","name":"Three Little Birds — transcription-inspired","bars":[{"hits":[0,2,4,5,6],"open":[6],"accent":[]},{"hits":[0,2,3,4,5,6,7],"open":[3],"accent":[4,6]}]}];
-const initKey=p+'-h3-h4-init-v1';
-if(localStorage.getItem(initKey))return;
-try {
- const patterns=[[[true,false,true,false,true,false,true,false,true,false,true,false,true,false,true,false],[true,false,false,false,true,false,true,false,true,false,false,false,true,false,true,false],[true,false,false,false,true,false,false,false,true,false,false,false,true,false,false,false],[true,false,false,false,true,false,false,false,true,false,true,false,true,false,false,false],[true,false,true,false,true,false,true,false,true,false,true,false,true,true,true,false],[true,false,true,false,true,false,true,false,true,false,true,false,true,false,true,true],[true,false,true,false,true,false,true,false,true,true,true,false,true,false,true,false],[true,false,true,false,true,false,true,false,true,false,true,false,true,false,true,false]],[[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false]],[[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false],[false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false]]];
- for(let k=0;k<2;k++) patterns[0][k+2]=row(draft[k].bars[0].hits);
- function row(h){return Array.from({length:16},(_,i)=>i%2===0&&h.includes(i/2))}
- localStorage.setItem(p+'-per-instrument-v3',JSON.stringify(patterns));
- const lengths=Array.from({length:3},()=>Array(8).fill(1));lengths[0][2]=2;lengths[0][3]=2;
- localStorage.setItem(p+'-variation-lengths-v1',JSON.stringify(lengths));
- const hats=Array.from({length:8},()=>Array.from({length:16},()=>({type:'closed',level:'normal'})));
- const hatRow=(b)=>Array.from({length:16},(_,i)=>({type:i%2===0&&b.open.includes(i/2)?'open':'closed',level:i%2===0&&b.accent.includes(i/2)?'accent':'normal'}));
- hats[2]=hatRow(draft[0].bars[0]);hats[3]=hatRow(draft[1].bars[0]);
- localStorage.setItem(p+'-hihat-articulations-v1',JSON.stringify(hats));
- const second={patterns:Array.from({length:3},()=>Array.from({length:8},()=>Array(16).fill(false))),snare:Array.from({length:8},()=>Array(16).fill('normal')),hats:Array.from({length:8},()=>Array.from({length:16},()=>({type:'closed',level:'normal'}))),initialized:Array.from({length:3},()=>Array(8).fill(false))};
- for(let k=0;k<2;k++){second.patterns[0][k+2]=row(draft[k].bars[1].hits);second.hats[k+2]=hatRow(draft[k].bars[1]);second.initialized[0][k+2]=true}
- localStorage.setItem(p+'-second-bar-data-v1',JSON.stringify({straight:second}));
- localStorage.setItem(initKey,'done');
-}catch(e){console.warn('preview initialization',e)}
+ const prefix=window.GROOVE_MACHINE.storagePrefix;
+ const flag=prefix+'-three-little-birds-corrected-v2';
+ if(localStorage.getItem(flag)==='done')return;
+ try{
+ const definitions=[[{"hits":[0,2,4,5,6],"open":[2]},{"hits":[0,2,4,5,6],"open":[6]}],[{"hits":[0,1,2,4,5,6,7],"open":[2]},{"hits":[0,2,4,5,6],"open":[6]}]];
+ const toGrid=bar=>Array.from({length:16},(_,i)=>i%2===0&&bar.hits.includes(i/2));
+ const toHats=bar=>Array.from({length:16},(_,i)=>({type:i%2===0&&bar.open.includes(i/2)?'open':'closed',level:'normal'}));
+ const gridKey=prefix+'-per-instrument-v3';
+ const banks=JSON.parse(localStorage.getItem(gridKey))||window.GROOVE_MACHINE.presets.map(bank=>bank.map(row=>row.slice()));
+ for(let k=0;k<2;k++)banks[0][k+2]=toGrid(definitions[k][0]);
+ localStorage.setItem(gridKey,JSON.stringify(banks));
+ const hatKey=prefix+'-hihat-articulations-v1';
+ const hats=JSON.parse(localStorage.getItem(hatKey))||Array.from({length:8},()=>Array.from({length:16},()=>({type:'closed',level:'normal'})));
+ for(let k=0;k<2;k++)hats[k+2]=toHats(definitions[k][0]);
+ localStorage.setItem(hatKey,JSON.stringify(hats));
+ const lengthKey=prefix+'-variation-lengths-v1';
+ const lengths=JSON.parse(localStorage.getItem(lengthKey))||Array.from({length:3},()=>Array(8).fill(1));
+ lengths[0][2]=2;lengths[0][3]=2;localStorage.setItem(lengthKey,JSON.stringify(lengths));
+ const secondKey=prefix+'-second-bar-data-v1';
+ const secondData=JSON.parse(localStorage.getItem(secondKey))||{};
+ const d=secondData.straight||{patterns:Array.from({length:3},()=>Array.from({length:8},()=>Array(16).fill(false))),snare:Array.from({length:8},()=>Array(16).fill('normal')),hats:Array.from({length:8},()=>Array.from({length:16},()=>({type:'closed',level:'normal'}))),initialized:Array.from({length:3},()=>Array(8).fill(false))};
+ for(let k=0;k<2;k++){d.patterns[0][k+2]=toGrid(definitions[k][1]);d.hats[k+2]=toHats(definitions[k][1]);d.initialized[0][k+2]=true}
+ secondData.straight=d;localStorage.setItem(secondKey,JSON.stringify(secondData));
+ localStorage.setItem(flag,'done');
+ }catch(e){console.warn('Three Little Birds migration',e)}
 })();
