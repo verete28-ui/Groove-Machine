@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 3.3</title>
+<title>Groove Lab 3.4-dev</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -66,7 +66,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">3.3</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">3.4-dev</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
@@ -74,7 +74,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
  <label>חלוקת קצב <select id="rhythmGrid"><option value="straight">רגיל · 16 צעדים</option><option value="triplet">טריולות שמיניות · 12 צעדים</option><option value="triplet16">טריולות שש־עשריות · 24 צעדים</option><option value="mixed">משולב · חלוקה לכל פעמה</option></select></label>
 
  <label id="swingSetting">Swing <input type="range" id="swing" min="50" max="75" value="50" step="1"><b id="swingOut">50%</b></label>
- <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label><input id="loop" type="checkbox" checked> לופ</label>
+ <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="reggae">Reggae Roots · ניסיון</option><option value="synth">Synth · מקורי</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label><input id="loop" type="checkbox" checked> לופ</label>
  <button id="reset">איפוס וריאציות פעילות</button>
 </div></details>
 <details class="fold" id="clickFold">
@@ -853,6 +853,19 @@ function renderScoreBar(){
  }catch(e){$('scoreMsg').textContent='שגיאה בתיווי: '+e.message}
 }
 const sampleSets={
+ reggae:{
+  // Virtuosity Drums (CC0) recordings, curated AAC versions from Keyboardia.
+  // Half-open and pedal are shaped derivatives of real open/closed articulations.
+  root:'https://cdn.jsdelivr.net/gh/adewale/keyboardia@main/app/public/instruments/',
+  files:{
+   kd:['acoustic-kick/source-0009.m4a','acoustic-kick/source-0013.m4a'],
+   sn:['acoustic-snare/source-0005.m4a','acoustic-snare/source-0016.m4a','acoustic-snare/source-0028.m4a'],
+   hh:['acoustic-hihat-closed/source-0006.m4a','acoustic-hihat-closed/source-0010.m4a','acoustic-hihat-closed/source-0014.m4a'],
+   hhOpen:['acoustic-hihat-open/source-0005.m4a','acoustic-hihat-open/source-0008.m4a','acoustic-hihat-open/source-0011.m4a'],
+   hhHalf:['acoustic-hihat-open/source-0005.m4a','acoustic-hihat-open/source-0008.m4a'],
+   hhPedal:['acoustic-hihat-closed/source-0006.m4a','acoustic-hihat-closed/source-0010.m4a']
+  }
+ },
  acoustic:{
   root:'https://cdn.jsdelivr.net/gh/studiorack/salamander-drumkit@master/Samples/',
   files:{
@@ -872,8 +885,8 @@ const sampleSets={
 const sampleBuffers={};
 const samplePromises={};
 const sampleKey='groove-lab-sound-kit-v1';
-try{const stored=localStorage.getItem(sampleKey);if(['studio','dub','synth','acoustic'].includes(stored))$('soundKit').value=stored;else $('soundKit').value='acoustic'}catch(e){$('soundKit').value='acoustic'}
-function chosenSet(kit){return kit==='acoustic'?'acoustic':'studio'}
+try{const stored=localStorage.getItem(sampleKey);if(['studio','dub','synth','acoustic','reggae'].includes(stored))$('soundKit').value=stored;else $('soundKit').value='acoustic'}catch(e){$('soundKit').value='acoustic'}
+function chosenSet(kit){return kit==='acoustic'?'acoustic':kit==='reggae'?'reggae':'studio'}
 function isReady(kit){const buffers=sampleBuffers[chosenSet(kit)];return buffers&&['hh','sn','kd'].every(k=>buffers[k]?.length)}
 function ensureSamples(kit=$('soundKit').value){
  if(kit==='synth'||!ctx)return Promise.resolve(false);
@@ -881,7 +894,7 @@ function ensureSamples(kit=$('soundKit').value){
  if(isReady(kit)){updateSampleStatus();return Promise.resolve(true)}
  if(samplePromises[set])return samplePromises[set];
  const config=sampleSets[set];
- updateSampleStatus('טוען '+(set==='acoustic'?'סמפלים אקוסטיים…':'סמפלים…'));
+ updateSampleStatus('טוען '+(set==='acoustic'?'סמפלים אקוסטיים…':set==='reggae'?'דגימות Reggae Roots…':'סמפלים…'));
  const loadOne=async name=>{
   const response=await fetch(config.root+name);
   if(!response.ok)throw new Error(name+': HTTP '+response.status);
@@ -900,13 +913,27 @@ function sampleHit(key,time,kit,velocity=1,registerHat=false){
  if(!buffers?.length)return false;
  const src=ctx.createBufferSource(),gain=ctx.createGain();
  // Round-robin is reserved for Acoustic HD; Studio and Dub play the same sample every hit.
- const buffer=kit==='acoustic'?buffers[Math.floor(Math.random()*buffers.length)]:buffers[0];
+ const buffer=kit==='acoustic'?buffers[Math.floor(Math.random()*buffers.length)]:
+  kit==='reggae'?buffers[Math.min(buffers.length-1,Math.floor(Math.max(0,velocity-.3)/.4))]:buffers[0];
  src.buffer=buffer;
- const isDub=kit==='dub',isAcoustic=kit==='acoustic';
- const level=isAcoustic?({hh:.34,hhHalf:.32,hhOpen:.28,hhPedal:.40,sn:.58,kd:.78}[key]):isDub?({hh:.32,sn:.52,kd:.75}[key]):({hh:.43,sn:.66,kd:.85}[key]);
+ const isDub=kit==='dub',isAcoustic=kit==='acoustic',isRoots=kit==='reggae';
+ const level=isRoots?({hh:.37,hhHalf:.30,hhOpen:.28,hhPedal:.31,sn:.44,kd:.65}[key]):
+  isAcoustic?({hh:.34,hhHalf:.32,hhOpen:.28,hhPedal:.40,sn:.58,kd:.78}[key]):
+  isDub?({hh:.32,sn:.52,kd:.75}[key]):({hh:.43,sn:.66,kd:.85}[key]);
  gain.gain.setValueAtTime(level*velocity,time);
  let end=buffer.duration,output=gain;
- if(isDub){
+ if(isRoots){
+  // Restrained low-pass colour on the whole kit. Shorten half-open and pedal
+  // articulations rather than mislabeling the sampled open/closed hits.
+  const filter=ctx.createBiquadFilter();filter.type='lowpass';
+  filter.frequency.value=key==='kd'?3800:key==='sn'?5200:key==='hhOpen'?9000:7700;
+  src.connect(filter);filter.connect(gain);
+  if(key==='hhHalf'||key==='hhPedal'){
+   end=Math.min(buffer.duration,key==='hhHalf'?.28:.105);
+   gain.gain.setValueAtTime(level*velocity,time+Math.max(.001,end-.038));
+   gain.gain.exponentialRampToValueAtTime(.001,time+end);
+  }
+ }else if(isDub){
   const filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=key==='hh'?4200:key==='sn'?3500:1900;
   src.connect(filter);filter.connect(gain);
   end=Math.min(buffer.duration,key==='hh'?.25:key==='sn'?.38:.70);
@@ -919,7 +946,7 @@ function sampleHit(key,time,kit,velocity=1,registerHat=false){
  gain.connect(bus);
  if(registerHat)activeOpenHats.push({gain:gain.gain,time});
  src.start(time);
- if(isDub)src.stop(time+end+.005);
+ if(isDub||(isRoots&&(key==='hhHalf'||key==='hhPedal')))src.stop(time+end+.005);
  return true;
 }
 let activeOpenHats=[];
@@ -966,7 +993,7 @@ function sound(i,t,bar=playingBar){
    // A new stick/pedal articulation replaces the previous ringing open hat.
    // This also avoids stacking two open samples when a phrase repeats.
    chokeHats(t);
-   const key=kit==='acoustic'?({closed:'hh',half:'hhHalf',open:'hhOpen',pedal:'hhPedal'})[hh.type]:'hh';
+   const key=(kit==='acoustic'||kit==='reggae')?({closed:'hh',half:'hhHalf',open:'hhOpen',pedal:'hhPedal'})[hh.type]:'hh';
    const played=sample&&sampleHit(key,t,kit,velocity,open);
    if(!played)syntheticHat(t,hh.type,velocity);
   }
@@ -1206,4 +1233,4 @@ $('lengthEditorClose').onclick=closeLengthEditor;
 $('lengthEditor').onclick=e=>{if(e.target===$('lengthEditor'))closeLengthEditor()};
 paintVariations();seq();window.addEventListener('load',score);
 })();
-</script><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת.</p></main></html>
+</script><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת. Reggae Roots (ניסוי) — <a style="color:#8edcf4" href="https://github.com/sfzinstruments/virtuosity_drums" target="_blank" rel="noopener">Virtuosity Drums</a> מאת Versilian Studios / Karoryfer Samples, CC0, דגימות AAC מותאמות באמצעות <a style="color:#8edcf4" href="https://github.com/adewale/keyboardia" target="_blank" rel="noopener">Keyboardia</a>. חצי פתוח ופדאל הם קירוב בעיבוד צליל.</p></main></html>
