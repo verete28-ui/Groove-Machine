@@ -858,7 +858,7 @@ const sampleSets={
   // Half-open and pedal are shaped derivatives of real open/closed articulations.
   root:'https://raw.githubusercontent.com/adewale/keyboardia/main/app/public/instruments/',
   files:{
-   kd:['acoustic-kick/source-0009.m4a','acoustic-kick/source-0013.m4a'],
+   kd:['https://cdn.jsdelivr.net/gh/studiorack/salamander-drumkit@master/Samples/kick_OH_F_1.flac','https://cdn.jsdelivr.net/gh/studiorack/salamander-drumkit@master/Samples/kick_OH_F_2.flac','https://cdn.jsdelivr.net/gh/studiorack/salamander-drumkit@master/Samples/kick_OH_F_3.flac'],
    sn:['acoustic-snare/source-0005.m4a','acoustic-snare/source-0016.m4a','acoustic-snare/source-0028.m4a'],
    hh:['acoustic-hihat-closed/source-0006.m4a','acoustic-hihat-closed/source-0010.m4a','acoustic-hihat-closed/source-0014.m4a'],
    hhOpen:['acoustic-hihat-open/source-0005.m4a','acoustic-hihat-open/source-0008.m4a','acoustic-hihat-open/source-0011.m4a'],
@@ -897,7 +897,7 @@ function ensureSamples(kit=$('soundKit').value){
  const config=sampleSets[set];
  updateSampleStatus('טוען '+(set==='acoustic'?'סמפלים אקוסטיים…':set==='reggae'?'דגימות Reggae Roots…':'סמפלים…'));
  const loadOne=async name=>{
-  const response=await fetch(config.root+name);
+  const response=await fetch(/^https?:\/\//.test(name)?name:config.root+name);
   if(!response.ok)throw new Error(name+': HTTP '+response.status);
   return await ctx.decodeAudioData(await response.arrayBuffer());
  };
@@ -916,14 +916,14 @@ function sampleHit(key,time,kit,velocity=1,registerHat=false){
  const src=ctx.createBufferSource(),gain=ctx.createGain();
  // Round-robin is reserved for Acoustic HD; Studio and Dub play the same sample every hit.
  const buffer=kit==='acoustic'?buffers[Math.floor(Math.random()*buffers.length)]:
-  kit==='reggae'?buffers[Math.min(buffers.length-1,Math.floor(Math.max(0,velocity-.3)/.4))]:buffers[0];
+  kit==='reggae'?buffers[key==='kd'?Math.floor(Math.random()*buffers.length):Math.min(buffers.length-1,Math.floor(Math.max(0,velocity-.3)/.4))]:buffers[0];
  src.buffer=buffer;
  const isDub=kit==='dub',isAcoustic=kit==='acoustic',isRoots=kit==='reggae';
  // Keyboardia's instrument manifests specify +12.66 dB for kick,
  // +16.37 dB for closed hat, +10.89 dB for open hat, and +0.23 dB
  // for snare. Previously we ignored that calibration, making the
  // unprocessed recordings quiet and badly balanced.
- const rootsLevel={hh:1.65,hhHalf:.95,hhOpen:.90,hhPedal:1.25,sn:.60,kd:2.40};
+ const rootsLevel={hh:.83,hhHalf:.52,hhOpen:.52,hhPedal:.67,sn:.85,kd:.96};
  const level=isRoots?rootsLevel[key]:
   isAcoustic?({hh:.34,hhHalf:.32,hhOpen:.28,hhPedal:.40,sn:.58,kd:.78}[key]):
   isDub?({hh:.32,sn:.52,kd:.75}[key]):({hh:.43,sn:.66,kd:.85}[key]);
@@ -948,13 +948,14 @@ function sampleHit(key,time,kit,velocity=1,registerHat=false){
   // Keep the original recorded transient and full natural decay.
   src.connect(gain);
  }
- gain.connect(bus);
+ gain.connect(isRoots?rootsInput:bus);
  if(registerHat)activeOpenHats.push({gain:gain.gain,time});
  src.start(time);
  if(isDub||(isRoots&&(key==='hhHalf'||key==='hhPedal')))src.stop(time+end+.005);
  return true;
 }
 let activeOpenHats=[];
+let rootsInput=null;
 function chokeHats(time){
  // WebAudio events are scheduled ahead: close only voices that began before
  // this instant, and fade their existing sample/synth gains at the exact time.
@@ -971,7 +972,13 @@ function syntheticHat(t,type,velocity){
  const env=noise(t,duration,filter,.24*velocity);
  if(type==='open'||type==='half')activeOpenHats.push({gain:env.gain,time:t});
 }
-function init(){if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return false;ctx=new C();bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}ctx.resume();if($('soundKit').value!=='synth')ensureSamples();return true}
+function init(){if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return false;ctx=new C();bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination);
+ // Roots has its own make-up gain followed by peak-taming compression.
+ // Other kits and metronome keep their previous routing and level.
+ rootsInput=ctx.createGain();rootsInput.gain.value=2.5;
+ const rootsLimiter=ctx.createDynamicsCompressor();rootsLimiter.threshold.value=-17;rootsLimiter.knee.value=8;rootsLimiter.ratio.value=8;rootsLimiter.attack.value=.003;rootsLimiter.release.value=.14;
+ rootsInput.connect(rootsLimiter);rootsLimiter.connect(bus);
+ }ctx.resume();if($('soundKit').value!=='synth')ensureSamples();return true}
 function tone(t,hz,d,v,end){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(hz,t);if(end)o.frequency.exponentialRampToValueAtTime(end,t+d*.8);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(bus);o.start(t);o.stop(t+d)}
 function noise(t,d,hz,v){const buf=ctx.createBuffer(1,Math.ceil(d*ctx.sampleRate),ctx.sampleRate),a=buf.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1;const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=buf;f.type='highpass';f.frequency.value=hz;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(f);f.connect(g);g.connect(bus);s.start(t);s.stop(t+d);return {gain:g.gain}}
 // A separate, sharp metronome voice stays audible above the snare on beats 2 and 4.
@@ -1238,4 +1245,4 @@ $('lengthEditorClose').onclick=closeLengthEditor;
 $('lengthEditor').onclick=e=>{if(e.target===$('lengthEditor'))closeLengthEditor()};
 paintVariations();seq();window.addEventListener('load',score);
 })();
-</script><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת. Reggae Roots (ניסוי, סאונד יבש ומכויל) — <a style="color:#8edcf4" href="https://github.com/sfzinstruments/virtuosity_drums" target="_blank" rel="noopener">Virtuosity Drums</a> מאת Versilian Studios / Karoryfer Samples, CC0, דגימות AAC מותאמות באמצעות <a style="color:#8edcf4" href="https://github.com/adewale/keyboardia" target="_blank" rel="noopener">Keyboardia</a>. חצי פתוח ופדאל הם קירוב בעיבוד צליל.</p></main></html>
+</script><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת. Reggae Roots (ניסוי, קיק Salamander ומיקס מוגבר) — <a style="color:#8edcf4" href="https://github.com/sfzinstruments/virtuosity_drums" target="_blank" rel="noopener">Virtuosity Drums</a> מאת Versilian Studios / Karoryfer Samples, CC0, דגימות AAC מותאמות באמצעות <a style="color:#8edcf4" href="https://github.com/adewale/keyboardia" target="_blank" rel="noopener">Keyboardia</a>. הקיק נלקח גם מ־Salamander (CC BY-SA 3.0); חצי פתוח ופדאל הם קירוב בעיבוד צליל.</p></main></html>
