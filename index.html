@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 1.7</title>
+<title>Groove Lab 1.8</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -29,13 +29,13 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">1.7</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">1.8</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
  <label>BPM <input type="range" id="bpm" min="40" max="180" value="80"><b id="bpmOut">80</b></label>
  <label>Swing <input type="range" id="swing" min="50" max="75" value="50" step="1"><b id="swingOut">50%</b></label>
- <label><input id="loop" type="checkbox" checked> לופ</label>
+ <label>ערכת צלילים <select id="soundKit"><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label><input id="loop" type="checkbox" checked> לופ</label>
  <button id="reset">איפוס וריאציות פעילות</button>
 </div></details>
 <details class="fold" id="clickFold">
@@ -59,7 +59,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 <section class="panel"><div id="seq" class="grid"></div><div id="scoreWrap" class="hide"><div id="score"></div><p id="scoreMsg" class="small">תיווי לתרגול · קריאה בלבד</p></div>
 </section></div></details>
 
-<p class="small">לחיצה על משבצת עורכת את המקצב. שתי התצוגות חולקות את אותם נתונים. לכל כלי שמונה תבניות בעלות אופי ריתמי שונה. בחר A–H בנפרד להיי־האט, סנר ובס. עריכת הסיקוונסר משנה רק את הווריאציה הפעילה של אותו כלי. ההגדרות נשמרות בדפדפן. אפשר להשתיק כל כלי בנפרד דרך סמל הרמקול לידו, או את כל התופים ולהשמיע רק קליק. רנדומייז בוחר שילוב חדש של וריאציות לכל שלושת הכלים.</p>
+<p class="small">לחיצה על משבצת עורכת את המקצב. שתי התצוגות חולקות את אותם נתונים. לכל כלי שמונה תבניות בעלות אופי ריתמי שונה. בחר A–H בנפרד להיי־האט, סנר ובס. עריכת הסיקוונסר משנה רק את הווריאציה הפעילה של אותו כלי. ההגדרות נשמרות בדפדפן. אפשר להשתיק כל כלי בנפרד דרך סמל הרמקול לידו, או את כל התופים ולהשמיע רק קליק. רנדומייז בוחר שילוב חדש של וריאציות לכל שלושת הכלים. בהגדרות אפשר לבחור ערכת סמפלים או צליל סינתטי; אם הסמפלים אינם זמינים, המנוע חוזר אוטומטית לסינתזה.</p>
 <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
 <script>
 (()=>{
@@ -286,7 +286,54 @@ function score(){
   $('scoreMsg').textContent='תיווי בסנכרון עם הנגן · הפסקות מדויקות גם בפעמה 4';
  }catch(e){$('scoreMsg').textContent='שגיאה בתיווי: '+e.message}
 }
-function init(){if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return false;ctx=new C();bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}ctx.resume();return true}
+const sampleRoot='https://cdn.jsdelivr.net/gh/teropa/drumkit@master/src/assets/';
+const sampleNames={hh:['hatClosed.mp3','hatClosed2.mp3'],sn:['snare.mp3','snare2.mp3','snare3.mp3'],kd:['kick.mp3']};
+const sampleBuffers={hh:[],sn:[],kd:[]};
+let sampleLoad=null;
+const sampleKey='groove-lab-sound-kit-v1';
+try{const stored=localStorage.getItem(sampleKey);if(['studio','dub','synth'].includes(stored))$('soundKit').value=stored}catch(e){}
+function ensureSamples(){
+ if(sampleLoad)return sampleLoad;
+ if(!ctx)return Promise.resolve(false);
+ $('sampleStatus').textContent='טוען סמפלים…';
+ const fetchOne=async filename=>{
+  const res=await fetch(sampleRoot+filename);
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  const data=await res.arrayBuffer();
+  return await ctx.decodeAudioData(data);
+ };
+ sampleLoad=Promise.all(Object.entries(sampleNames).map(async([k,files])=>{
+  sampleBuffers[k]=await Promise.all(files.map(fetchOne));
+ })).then(()=>{$('sampleStatus').textContent='סמפלים מוכנים';return true})
+ .catch(err=>{
+  sampleLoad=null;
+  Object.keys(sampleBuffers).forEach(k=>sampleBuffers[k]=[]);
+  $('sampleStatus').textContent='לא ניתן לטעון סמפלים — משתמש בצליל המקורי';
+  console.warn('Sample loading failed:',err);
+  return false;
+ });
+ return sampleLoad;
+}
+function sampleHit(k,t,vintage){
+ const pool=sampleBuffers[k];
+ if(!pool.length)return false;
+ const src=ctx.createBufferSource();
+ src.buffer=pool[Math.floor(Math.random()*pool.length)];
+ const filter=ctx.createBiquadFilter(),envelope=ctx.createGain();
+ filter.type='lowpass';
+ filter.frequency.value=vintage?(k==='hh'?3800:k==='sn'?3300:1100):18000;
+ const gain=vintage?(k==='hh'?.35:k==='sn'?.55:.78):(k==='hh'?.43:k==='sn'?.70:.90);
+ envelope.gain.setValueAtTime(gain,t);
+ const release=vintage?(k==='hh'?.10:k==='sn'?.20:.36):(k==='hh'?.24:k==='sn'?.5:.8);
+ const duration=Math.min(src.buffer.duration,release);
+ envelope.gain.setValueAtTime(gain,t);
+ envelope.gain.setValueAtTime(gain,t+Math.min(.012,duration*.2));
+ envelope.gain.exponentialRampToValueAtTime(.001,t+Math.max(.03,duration));
+ src.connect(filter);filter.connect(envelope);envelope.connect(bus);
+ src.start(t);src.stop(t+Math.max(.04,duration+.01));
+ return true;
+}
+function init(){if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return false;ctx=new C();bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}ctx.resume();if($('soundKit').value!=='synth')ensureSamples();return true}
 function tone(t,hz,d,v,end){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(hz,t);if(end)o.frequency.exponentialRampToValueAtTime(end,t+d*.8);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(bus);o.start(t);o.stop(t+d)}
 function noise(t,d,hz,v){const buf=ctx.createBuffer(1,Math.ceil(d*ctx.sampleRate),ctx.sampleRate),a=buf.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1;const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=buf;f.type='highpass';f.frequency.value=hz;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(f);f.connect(g);g.connect(bus);s.start(t);s.stop(t+d)}
 // A separate, sharp metronome voice stays audible above the snare on beats 2 and 4.
@@ -303,9 +350,11 @@ function metronomeClick(t,accent,volume){
 }
 function sound(i,t){
  if($('drumsEnabled').checked){
-  if(!trackMuted[0]&&patterns[0][i])noise(t,.045,6400,.24);
-  if(!trackMuted[1]&&patterns[1][i]){noise(t,.13,1100,.48);tone(t,170,.07,.15)}
-  if(!trackMuted[2]&&patterns[2][i])tone(t,145,.24,.85,43);
+  const kit=$('soundKit').value;
+  const sample=kit!=='synth',vintage=kit==='dub';
+  if(!trackMuted[0]&&patterns[0][i]&&(!sample||!sampleHit('hh',t,vintage)))noise(t,.045,6400,.24);
+  if(!trackMuted[1]&&patterns[1][i]&&(!sample||!sampleHit('sn',t,vintage))){noise(t,.13,1100,.48);tone(t,170,.07,.15)}
+  if(!trackMuted[2]&&patterns[2][i]&&(!sample||!sampleHit('kd',t,vintage)))tone(t,145,.24,.85,43);
  }
  if($('metro').checked){
   const div=Number($('clickDivision').value);
@@ -328,6 +377,11 @@ function tick(){if(!running)return;const n=rev;while(next<ctx.currentTime+.09&&r
 $('play').onclick=()=>{if(running){stop();return}if(!init())return;running=true;rev++;position=0;next=ctx.currentTime+.05;$('play').textContent='Ⅱ השהה';tick();timer=setInterval(tick,20)};
 $('stop').onclick=stop;
 $('bpm').oninput=()=>{$('bpmOut').textContent=$('bpm').value};
+$('soundKit').onchange=()=>{
+ try{localStorage.setItem(sampleKey,$('soundKit').value)}catch(e){}
+ if($('soundKit').value!=='synth'&&ctx)ensureSamples();
+ if($('soundKit').value==='synth')$('sampleStatus').textContent='צליל סינתטי מקורי';
+};
 $('swing').oninput=()=>{$('swingOut').textContent=$('swing').value+'%'};
 function updateClickSummary(){
  $('clickSummary').textContent=$('metro').checked?('פעיל · '+$('clickDivision').selectedOptions[0].textContent):'כבוי';
@@ -365,4 +419,4 @@ $('copyVar').onclick=()=>{
 };
 paintVariations();seq();window.addEventListener('load',score);
 })();
-</script></main></html>
+</script><p class="small">קרדיט לסמפלים: <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>; הקלטות מקור מ־Freesound, רישיונות CC BY ו־CC0 כמפורט במקור. ערכת Vintage/Dub היא עיבוד בזמן אמת של אותה ספריית סמפלים.</p></main></html>
