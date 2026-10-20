@@ -884,6 +884,7 @@ const sampleSets={
 };
 const sampleBuffers={};
 const samplePromises={};
+const sampleErrors={};
 const sampleKey='groove-lab-sound-kit-v1';
 try{const stored=localStorage.getItem(sampleKey);if(['studio','dub','synth','acoustic','reggae'].includes(stored))$('soundKit').value=stored;else $('soundKit').value='acoustic'}catch(e){$('soundKit').value='acoustic'}
 function chosenSet(kit){return kit==='acoustic'?'acoustic':kit==='reggae'?'reggae':'studio'}
@@ -891,7 +892,7 @@ function isReady(kit){const buffers=sampleBuffers[chosenSet(kit)];return buffers
 function ensureSamples(kit=$('soundKit').value){
  if(kit==='synth'||!ctx)return Promise.resolve(false);
  const set=chosenSet(kit);
- if(isReady(kit)){updateSampleStatus();return Promise.resolve(true)}
+ if(isReady(kit)){delete sampleErrors[set];updateSampleStatus();return Promise.resolve(true)}
  if(samplePromises[set])return samplePromises[set];
  const config=sampleSets[set];
  updateSampleStatus('טוען '+(set==='acoustic'?'סמפלים אקוסטיים…':set==='reggae'?'דגימות Reggae Roots…':'סמפלים…'));
@@ -901,12 +902,13 @@ function ensureSamples(kit=$('soundKit').value){
   return await ctx.decodeAudioData(await response.arrayBuffer());
  };
  samplePromises[set]=Promise.all(Object.entries(config.files).map(async ([key,files])=>[key,await Promise.all(files.map(loadOne))]))
-  .then(pairs=>{sampleBuffers[set]=Object.fromEntries(pairs);updateSampleStatus();return true})
-  .catch(e=>{console.warn('Unable to load sample set',set,e);samplePromises[set]=null;updateSampleStatus('טעינת '+set+' נכשלה — משתמש בסינתזה');return false});
+  .then(pairs=>{sampleBuffers[set]=Object.fromEntries(pairs);delete sampleErrors[set];updateSampleStatus();return true})
+  .catch(e=>{console.warn('Unable to load sample set',set,e);samplePromises[set]=null;sampleErrors[set]=e.message;updateSampleStatus();return false});
  return samplePromises[set];
 }
 function updateSampleStatus(message){
- $('sampleStatus').textContent=message||($('soundKit').value==='synth'?'צלילים סינתטיים':isReady($('soundKit').value)?'✓ סמפלים מוקלטים פעילים':'סמפלים עדיין לא נטענו');
+ const kit=$('soundKit').value,set=chosenSet(kit);
+ $('sampleStatus').textContent=message||(kit==='synth'?'צלילים סינתטיים':sampleErrors[set]?(kit==='reggae'?'⚠ דגימות Reggae Roots לא נטענו — אין מעבר לסינתזה':'⚠ טעינת דגימות נכשלה; צליל סינתטי חלופי'):isReady(kit)?'✓ דגימות מוקלטות פעילות':'סמפלים עדיין לא נטענו');
 }
 function sampleHit(key,time,kit,velocity=1,registerHat=false){
  const set=chosenSet(kit),buffers=sampleBuffers[set]?.[key];
@@ -995,13 +997,13 @@ function sound(i,t,bar=playingBar){
    chokeHats(t);
    const key=(kit==='acoustic'||kit==='reggae')?({closed:'hh',half:'hhHalf',open:'hhOpen',pedal:'hhPedal'})[hh.type]:'hh';
    const played=sample&&sampleHit(key,t,kit,velocity,open);
-   if(!played)syntheticHat(t,hh.type,velocity);
+   if(!played&&kit!=='reggae')syntheticHat(t,hh.type,velocity);
   }
   if(!trackMuted[1]&&patterns[1][i]){
    const velocity=snareGain(i);
-   if(!sample||!sampleHit('sn',t,kit,velocity)){noise(t,.13,1100,.48*velocity);tone(t,170,.07,.15*velocity)}
+   if(!sample||!sampleHit('sn',t,kit,velocity)){if(kit!=='reggae'){noise(t,.13,1100,.48*velocity);tone(t,170,.07,.15*velocity)}}
   }
-  if(!trackMuted[2]&&patterns[2][i]&&(!sample||!sampleHit('kd',t,kit)))tone(t,145,.24,.85,43);
+  if(!trackMuted[2]&&patterns[2][i]&&(!sample||!sampleHit('kd',t,kit))&&kit!=='reggae')tone(t,145,.24,.85,43);
  }
  if($('metro').checked){
   const div=Number($('clickDivision').value);
