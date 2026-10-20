@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 2.9</title>
+<title>Groove Lab 3.0</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -46,7 +46,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">2.9</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">3.0</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
@@ -391,26 +391,118 @@ function seq(){
 
 }
 function mixedScore(){
- const host=$('score'),ns='http://www.w3.org/2000/svg';host.replaceChildren();
- const svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 900 175');svg.style.width='100%';svg.style.height='auto';
- const line=(x1,y1,x2,y2,color='#bdc6cd',width=1)=>{const el=document.createElementNS(ns,'line');Object.entries({x1,y1,x2,y2,stroke:color,'stroke-width':width}).forEach(([k,v])=>el.setAttribute(k,v));svg.append(el);return el};
- const label=(x,y,t,color='#263b4a',size=12)=>{const el=document.createElementNS(ns,'text');Object.entries({x,y,fill:color,'font-size':size,'text-anchor':'middle'}).forEach(([k,v])=>el.setAttribute(k,v));el.textContent=t;svg.append(el)};
- const x0=65,bw=203,ys=[60,90,120];
- [60,75,90,105,120].forEach(y=>line(x0,y,x0+bw*4,y));
- ['HH','SN','KD'].forEach((n,i)=>label(25,ys[i]+4,n));
- scorePositions=Array.from({length:48},(_,i)=>x0+Math.floor(i/12)*bw+(i%12)*bw/12);
- for(let beat=0;beat<4;beat++){const x=x0+beat*bw;line(x,40,x,135,'#607481');
- label(x+bw/2,24,'פעמה '+(beat+1)+' · '+mixedBeats[beat]+' חלוקות');
- offsets(mixedBeats[beat]).forEach(t=>line(x+t*bw/12,43,x+t*bw/12,130,'#e4e9ec'))}
- line(x0+bw*4,40,x0+bw*4,135,'#607481');
- patterns.forEach((row,r)=>row.forEach((hit,i)=>{if(!hit)return;const x=scorePositions[i],y=ys[r],aligned=offsets(mixedBeats[Math.floor(i/12)]).includes(i%12);
- if(r===0){label(x,y+5,'×',aligned?'#203441':'#b96627',20);
- if(currentHat(i).type==='open'){const c=document.createElementNS(ns,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r','9');c.setAttribute('stroke','#203441');c.setAttribute('fill','none');svg.append(c)}}
- else{const c=document.createElementNS(ns,'ellipse');Object.entries({cx:x,cy:y,rx:5,ry:4,fill:aligned?'#203441':'#b96627'}).forEach(([k,v])=>c.setAttribute(k,v));svg.append(c)}
- }));
- label(450,160,'כתום: מכות מחוץ לחלוקה הנבחרת — נשמרות ומתנגנות בזמן המקורי','#8d5128');
- host.append(svg);scoreCursor=line(x0,37,x0,136,'#e65142',2.5);scoreCursor.setAttribute('opacity','0');markScore(shownStep);
- $('scoreMsg').textContent='מפת מיקום מדויקת (עדיין לא תיווי קלאסי מלא).';
+ const host=$('score');host.replaceChildren();
+ const VF=window.Vex?.Flow;
+ if(!VF){$('scoreMsg').textContent='ספריית התווים אינה זמינה';return}
+ try{
+  // Every beat has exactly one quarter-note duration, regardless of its subdivision.
+  // When an off-grid event exists, use a faithful 12-slot (32nd-triplet) transcription
+  // for that beat rather than rounding the attack onto the selected editing grid.
+  const offGridBeats=Array.from({length:4},(_,beat)=>
+   Array.from({length:12},(_,tick)=>beat*12+tick).some(i=>
+    patterns.some(row=>row[i])&&!offsets(mixedBeats[beat]).includes(i%12)));
+  const detailed=offGridBeats.some(Boolean);
+  const width=detailed?1320:900,height=190;
+  const renderer=new VF.Renderer(host,VF.Renderer.Backends.SVG);
+  renderer.resize(width,height);
+  const context=renderer.getContext();
+  const stave=new VF.Stave(40,24,width-75);
+  stave.addClef('percussion').addTimeSignature('4/4');
+  stave.setContext(context).draw();
+  const notes=[],positions=[],tuplets=[],beams=[],snareMarks=[],hatMarks=[];
+  const anyHit=i=>patterns.some(row=>row[i]);
+  function addNote(tick,duration){
+   const hit=anyHit(tick),keys=[];
+   if(hit){
+    if(patterns[2][tick])keys.push('f/4');
+    if(patterns[1][tick])keys.push('c/5');
+    if(patterns[0][tick])keys.push('g/5/x');
+   }
+   const note=new VF.StaveNote({
+    clef:'percussion',keys:hit?keys:['b/4'],
+    duration:duration+(hit?'':'r'),stem_direction:1
+   });
+   notes.push(note);positions.push(tick);
+   if(hit&&patterns[1][tick]&&snareLevel(tick)!=='normal')snareMarks.push({note,level:snareLevel(tick)});
+   if(hit&&patterns[0][tick]){
+    const hat=currentHat(tick);
+    if(hat.type!=='closed'||hat.level!=='normal')hatMarks.push({note,hat});
+   }
+   return note;
+  }
+  for(let beat=0;beat<4;beat++){
+   const first=beat*12,count=offGridBeats[beat]?12:mixedBeats[beat];
+   const ticks=offsets(count).map(offset=>first+offset);
+   const unitDuration=count===3?'8':count===4?'16':count===6?'16':'32';
+   const group=ticks.map(tick=>addNote(tick,unitDuration));
+   // A standard quarter with four sixteenths needs no tuplet.
+   if(count===3)tuplets.push(new VF.Tuplet(group,{num_notes:3,notes_occupied:2,bracketed:true,ratioed:false}));
+   else if(count===6||count===12){
+    for(let j=0;j<count;j+=3)tuplets.push(new VF.Tuplet(group.slice(j,j+3),{num_notes:3,notes_occupied:2,bracketed:true,ratioed:false}));
+   }
+   // Beam only adjacent struck notes, never across written rests.
+   const beamChunk=count===3?3:count===4?2:3;
+   for(let j=0;j<count;j+=beamChunk){
+    let contiguous=[];
+    const flush=()=>{if(contiguous.length>=2)beams.push(contiguous);contiguous=[]};
+    for(let k=j;k<Math.min(j+beamChunk,count);k++){
+     if(anyHit(ticks[k]))contiguous.push(group[k]);else flush();
+    }
+    flush();
+   }
+  }
+  const voice=new VF.Voice({num_beats:4,beat_value:4});
+  voice.addTickables(notes);
+  const formatter=new VF.Formatter();
+  formatter.joinVoices([voice]).format([voice],width-185);
+  voice.draw(context,stave);
+  beams.forEach(group=>new VF.Beam(group).setContext(context).draw());
+  tuplets.forEach(tuple=>tuple.setContext(context).draw());
+  const svg=host.querySelector('svg');
+  if(svg){
+   svg.setAttribute('viewBox','0 0 '+width+' '+height);
+   svg.setAttribute('width','100%');svg.setAttribute('height','auto');svg.style.width='100%';svg.style.height='auto';
+   const pairs=notes.map((note,i)=>({tick:positions[i],x:note.getAbsoluteX()}));
+   scorePositions=Array.from({length:48},(_,tick)=>{
+    const left=[...pairs].reverse().find(p=>p.tick<=tick)||pairs[0];
+    const right=pairs.find(p=>p.tick>tick)||{tick:48,x:width-30};
+    return left.x+(right.x-left.x)*(tick-left.tick)/(right.tick-left.tick);
+   });
+   const ns='http://www.w3.org/2000/svg';
+   const markText=(x,y,label,color='#394954')=>{
+    const el=document.createElementNS(ns,'text');
+    el.setAttribute('x',x);el.setAttribute('y',y);el.setAttribute('text-anchor','middle');
+    el.setAttribute('font-size','12');el.setAttribute('fill',color);el.textContent=label;svg.append(el);
+   };
+   hatMarks.forEach(({note,hat})=>{
+    if(hat.type==='open'){
+     const keyIndex=note.getKeys().findIndex(k=>k==='g/5/x');
+     const y=note.getYs()[keyIndex];
+     if(Number.isFinite(y)){
+      const circle=document.createElementNS(ns,'circle');
+      circle.setAttribute('cx',(typeof note.getNoteHeadBeginX==='function'?note.getNoteHeadBeginX():note.getAbsoluteX()-5)+5);
+      circle.setAttribute('cy',y);circle.setAttribute('r','8.5');
+      circle.setAttribute('stroke','#294450');circle.setAttribute('fill','none');svg.append(circle);
+     }
+    }else markText(note.getAbsoluteX(),16,hat.type==='half'?'◐':hat.type==='pedal'?'×':hat.level==='accent'?'>':'·');
+   });
+   snareMarks.forEach(({note,level})=>markText(note.getAbsoluteX(),174,level==='ghost'?'g':'>'));
+   offGridBeats.forEach((hasOffGrid,beat)=>{
+    if(hasOffGrid){
+     const x=pairs.find(p=>p.tick===beat*12)?.x;
+     if(Number.isFinite(x))markText(x+20,187,'*','#aa6729');
+    }
+   });
+   scoreCursor=document.createElementNS(ns,'line');
+   scoreCursor.setAttribute('y1','18');scoreCursor.setAttribute('y2','139');
+   scoreCursor.setAttribute('stroke','#e65142');scoreCursor.setAttribute('stroke-width','2.5');
+   scoreCursor.setAttribute('opacity','0');scoreCursor.setAttribute('pointer-events','none');svg.append(scoreCursor);
+   markScore(shownStep);
+  }
+  $('scoreMsg').textContent=detailed
+   ?'תיווי ריתמי מלא: בפעימות עם מכות מחוץ לרשת מוצגת חלוקת 12 לשמירת התזמון (מסומנות ב־*).'
+   :'תיווי ריתמי: טריולות של שמיניות ושש־עשריות עם סימון 3.';
+ }catch(e){console.error('Mixed notation:',e);$('scoreMsg').textContent='שגיאה בתיווי: '+e.message}
 }
 function score(){
  const host=$('score');host.replaceChildren();
