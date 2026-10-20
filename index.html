@@ -39,6 +39,9 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .beat-selectors select{background:#263a48;color:#fff;border:1px solid #507084;border-radius:7px;padding:5px 2px;width:100%;font-size:12px}
 .beat-slice{display:grid;min-width:0;gap:2px}
 .beat-slice .step{min-width:0}
+.bar-panel{border:1px solid #54707d;border-radius:10px;padding:7px 4px;margin:8px 0;min-width:0}.bar-panel.is-active{border:2px solid #2bb5cc;background:#19333d}
+.bar-panel .track{margin:8px 0}.bar-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin:3px 0 7px}.repeat-label{font-size:11px;color:#acc2ce}
+
 .beat-slice{position:relative}.off-grid{position:absolute;top:100%;left:0;padding:1px 4px;background:#aa6731;border:0;border-radius:5px;font-size:10px;min-height:14px;z-index:2}
 .track:has(.off-grid){margin-bottom:24px}
 .beats{display:grid;grid-template-columns:71px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
@@ -137,6 +140,10 @@ const mixedBeatKey='groove-lab-mixed-beats-v1';
 let mixedBeats=[4,3,4,6];
 try{const saved=JSON.parse(localStorage.getItem(mixedBeatKey));if(Array.isArray(saved)&&saved.length===4&&saved.every(n=>[3,4,6].includes(n)))mixedBeats=saved}catch(e){}
 const stepCount=()=>rhythmGrid==='mixed'?48:rhythmGrid==='triplet16'?24:rhythmGrid==='triplet'?12:16;
+const secondBeatKey='groove-lab-second-bar-subdivisions-v1';
+let secondMixedBeats=mixedBeats.slice();
+try{const x=JSON.parse(localStorage.getItem(secondBeatKey));if(Array.isArray(x)&&x.length===4&&x.every(n=>[3,4,6].includes(n)))secondMixedBeats=x}catch(e){}
+const beatDivisionsForBar=bar=>rhythmGrid==='mixed'?(bar===1?secondMixedBeats:mixedBeats):Array(4).fill(subdivisions());
 const beatStarts=()=>[0,12,24,36];
 function getStepBeat(i){return rhythmGrid==='mixed'?Math.floor(i/12):Math.floor(i/subdivisions())};
 const subdivisions=()=>rhythmGrid==='triplet16'?6:rhythmGrid==='triplet'?3:4;
@@ -390,7 +397,21 @@ function score(){
 let ctx,bus,running=false,timer=null,position=0,next=0,rev=0,shownStep=-1,scorePositions=[],scoreCursor=null;
 function seq(){
  const host=$('seq');host.replaceChildren();
- patterns.forEach((a,r)=>{
+ const total=cycleBars();$('beatControls').hidden=total===2;
+ for(let bar=0;bar<total;bar++){
+  const panel=document.createElement('div');panel.className=total===2?'bar-panel'+(bar===shownBar?' is-active':''):'single-bar';
+  panel.dataset.bar=String(bar);
+  if(total===2){
+   const heading=document.createElement('div');heading.className='bar-head';
+   const title=document.createElement('strong');title.textContent='תיבה '+(bar+1);
+   const repeat=document.createElement('span');repeat.className='repeat-label';
+   repeat.textContent=bar===1?'↻ כלי בן תיבה אחת חוזר':'';
+   heading.append(title,repeat);panel.append(heading);
+   const controls=document.createElement('div');controls.className='beat-controls';
+   const placeholder=document.createElement('span'),selectors=document.createElement('div');selectors.className='beat-selectors';
+   controls.append(placeholder,selectors);panel.append(controls);buildBeatSelectors(selectors,bar);
+  }
+  barPatterns(bar).forEach((a,r)=>{
   const row=document.createElement('div');row.className='track'+(trackMuted[r]?' is-muted':'');
   row.style.gridTemplateColumns='34px 34px repeat(4,minmax(0,1fr))';
   row.classList.toggle('dense',rhythmGrid==='triplet16'||rhythmGrid==='mixed');
@@ -402,15 +423,15 @@ function seq(){
   mute.setAttribute('aria-pressed',String(trackMuted[r]));
   mute.onclick=()=>setTrackMute(r);
   row.append(mute);
-  const counts=rhythmGrid==='mixed'?mixedBeats:Array(4).fill(subdivisions());
+  const counts=beatDivisionsForBar(bar);
   for(let beat=0;beat<4;beat++){
    const group=document.createElement('div');group.className='beat-slice';
    group.style.gridTemplateColumns='repeat('+counts[beat]+',minmax(0,1fr))';row.append(group);
    const visible=rhythmGrid==='mixed'?offsets(counts[beat]).map(t=>beat*12+t):Array.from({length:counts[beat]},(_,j)=>beat*counts[beat]+j);
    visible.forEach(i=>{const hit=a[i];
-   const b=document.createElement('button');b.dataset.step=String(i);
-   const level=r===1&&hit?snareLevel(i):'normal';
-   const hat=r===0&&hit?currentHat(i):null;
+   const b=document.createElement('button');b.dataset.step=String(i);b.dataset.bar=String(bar);
+   const level=r===1&&hit?snareLevelAt(i,bar):'normal';
+   const hat=r===0&&hit?hatAt(i,bar):null;
    b.className='step'+(hit?' hit':'')+(i===shownStep?' current':'')+(r===1&&hit?' '+level:'');
    if(r===1&&hit&&level!=='normal')b.textContent=level==='ghost'?'g':'>';
    if(hat){
@@ -421,7 +442,7 @@ function seq(){
    b.setAttribute('aria-label',names[r]+' step '+(i+1));
    if(r===1||r===0){
     let longTimer=null,suppressClick=false;
-    const openEditor=()=>r===0?openHatEditor(i):openSnareEditor(i);
+    const openEditor=()=>r===0?openHatEditor(i,bar):openSnareEditor(i,bar);
     b.addEventListener('pointerdown',e=>{
      if(e.button!==0)return;
      suppressClick=false;
@@ -432,8 +453,8 @@ function seq(){
     b.addEventListener('pointercancel',cancelLong);
     b.addEventListener('pointerleave',cancelLong);
     b.addEventListener('contextmenu',e=>{e.preventDefault();cancelLong();suppressClick=true;openEditor()});
-    b.onclick=()=>{if(suppressClick){suppressClick=false;return}a[i]=!a[i];saveVariations();seq();score()};
-   }else b.onclick=()=>{a[i]=!a[i];saveVariations();seq();score()};
+    b.onclick=()=>{if(suppressClick){suppressClick=false;return}a[i]=!a[i];saveVariations();saveSecond();seq();score()};
+   }else b.onclick=()=>{a[i]=!a[i];saveVariations();saveSecond();seq();score()};
     group.append(b);
    });
    if(rhythmGrid==='mixed'){
@@ -443,22 +464,25 @@ function seq(){
      note.onclick=()=>alert(names[r]+' · פעמה '+(beat+1)+'\nמכות מחוץ לרשת ב־'+hidden.map(i=>(i%12+1)+'/12').join(', ')+'\nהחלוקה אינה משנה אותן.');group.append(note)}
    }
   }
-  host.append(row);
+  panel.append(row);
  });
- const header=$('beatSelectors');header.replaceChildren();
- const currentDivisions=rhythmGrid==='mixed'?mixedBeats:Array(4).fill(subdivisions());
+ host.append(panel);
+ }
+ if(total===1)buildBeatSelectors($('beatSelectors'),0);
+}
+function buildBeatSelectors(header,bar){
+ header.replaceChildren();
+ const currentDivisions=beatDivisionsForBar(bar);
  currentDivisions.forEach((n,i)=>{
-  const label=document.createElement('label');
-  label.textContent='פעמה '+(i+1);
+  const label=document.createElement('label');label.textContent='פעמה '+(i+1);
   const select=document.createElement('select');
   [4,3,6].forEach(v=>{const option=document.createElement('option');option.value=String(v);option.textContent=v===4?'4 · רגיל':v===3?'3 · טריולה':'6 · טריולה';select.append(option)});
-  select.value=String(queuedBeatDivisions[i]??n);
-  if(queuedBeatDivisions[i]!==undefined){select.style.borderColor='#efc14b';select.title='ממתין לתיבה הבאה'}
-  select.setAttribute('aria-label','חלוקה לפעמה '+(i+1));
-  select.onchange=()=>changeBeatDivision(i,Number(select.value));
+  select.value=String(queuedBeatDivisions[bar+':'+i]??n);
+  select.setAttribute('aria-label','תיבה '+(bar+1)+' חלוקה לפעמה '+(i+1));
+  if(queuedBeatDivisions[bar+':'+i]!==undefined)select.style.borderColor='#efc14b';
+  select.onchange=()=>changeBeatDivision(i,Number(select.value),bar);
   label.append(select);header.append(label);
  });
-
 }
 function mixedScore(){
  const patterns=barPatterns(scoreBarContext),snareLevel=step=>snareLevelAt(step,scoreBarContext),currentHat=step=>hatAt(step,scoreBarContext);
@@ -915,7 +939,12 @@ function markScore(s,bar=shownBar){
  });
  $('score').querySelectorAll('.score-bar-panel').forEach(node=>node.classList.toggle('is-active',Number(node.dataset.bar)===bar));
 }
-function mark(s){shownStep=s;$('seq').querySelectorAll('.track').forEach(row=>row.querySelectorAll('.step').forEach(b=>b.classList.toggle('current',Number(b.dataset.step)===s)));markScore(s)}
+function mark(s,bar=shownBar){
+ shownStep=s;shownBar=bar;
+ $('seq').querySelectorAll('.step').forEach(b=>b.classList.toggle('current',s>=0&&Number(b.dataset.step)===s&&Number(b.dataset.bar)===bar));
+ $('seq').querySelectorAll('.bar-panel').forEach(node=>node.classList.toggle('is-active',Number(node.dataset.bar)===bar));
+ markScore(s,bar);
+}
 function stop(){running=false;applyQueuedBeatDivisions();activeOpenHats=[];pending=[null,null,null];paintVariations();rev++;clearInterval(timer);timer=null;position=0;mark(-1);$('play').textContent='▶ נגן';$('status').textContent='מוכן';if(ctx){bus.gain.setTargetAtTime(0,ctx.currentTime,.008);bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}}
 function tick(){if(!running)return;const n=rev;while(next<ctx.currentTime+.09&&running){const i=position,t=next;
   if(i===0){applyQueuedBeatDivisions();applyPendingVariations();}
