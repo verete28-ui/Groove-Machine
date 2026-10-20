@@ -917,7 +917,7 @@ function sampleHit(key,time,kit,velocity=1,registerHat=false){
  const buffer=kit==='acoustic'?buffers[Math.floor(Math.random()*buffers.length)]:kit==='avl'?buffers[Math.min(buffers.length-1,velocity<.65?0:velocity<1.15?1:2)]:buffers[0];
  src.buffer=buffer;
  const isDub=kit==='dub',isAcoustic=kit==='acoustic',isAVL=kit==='avl';
- const level=isAVL?({hh:.46,hhHalf:.42,hhOpen:.40,hhPedal:.46,sn:.83,snEdge:.72,kd:.86}[key]):isAcoustic?({hh:.34,hhHalf:.32,hhOpen:.28,hhPedal:.40,sn:.58,kd:.78}[key]):isDub?({hh:.32,sn:.52,kd:.75}[key]):({hh:.43,sn:.66,kd:.85}[key]);
+ const level=isAVL?({hh:.46,hhHalf:.42,hhOpen:.40,hhPedal:.46,sn:.70,snEdge:.61,kd:.86}[key]):isAcoustic?({hh:.34,hhHalf:.32,hhOpen:.28,hhPedal:.40,sn:.58,kd:.78}[key]):isDub?({hh:.32,sn:.52,kd:.75}[key]):({hh:.43,sn:.66,kd:.85}[key]);
  // AVL's five velocity layers are actual performance levels; leave their
  // dynamics and decay unprocessed rather than recreating the prior boomy mix.
  gain.gain.setValueAtTime(level*(isAVL?Math.min(1.2,Math.max(.6,velocity)):velocity),time);
