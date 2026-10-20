@@ -6,7 +6,7 @@
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
 button{background:#263a48;color:inherit;border:1px solid #507084;border-radius:9px;padding:10px;cursor:pointer;font:inherit}
 button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#182630;border-radius:12px;padding:12px;margin:12px 0}
-.hide{display:none!important}
+.hide{display:none!important}[hidden]{display:none!important}
 .fold{border:1px solid #455a67;background:#182630;border-radius:12px;margin:10px 0;overflow:hidden}
 .fold summary{cursor:pointer;list-style:none;padding:13px 12px;display:flex;align-items:center;justify-content:space-between;font-weight:650;touch-action:manipulation}
 .fold summary::-webkit-details-marker{display:none}
@@ -74,7 +74,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
  <label>חלוקת קצב <select id="rhythmGrid"><option value="straight">רגיל · 16 צעדים</option><option value="triplet">טריולות שמיניות · 12 צעדים</option><option value="triplet16">טריולות שש־עשריות · 24 צעדים</option><option value="mixed">משולב · חלוקה לכל פעמה</option></select></label>
 
  <label id="swingSetting">Swing <input type="range" id="swing" min="50" max="75" value="50" step="1"><b id="swingOut">50%</b></label>
- <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option><option value="avl">AVL Black Pearl · ניסיון</option><option value="salamanderReggae">Salamander · Reggae Resonance · ניסיון</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label id="reggaeReverbControl" hidden>רים־שוט · ריוורב <input type="range" id="reggaeReverb" min="0" max="100" step="5" value="45"><b id="reggaeReverbOut">45%</b></label><label><input id="loop" type="checkbox" checked> לופ</label>
+ <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option><option value="avl">AVL Black Pearl · ניסיון</option><option value="salamanderReggae">Salamander · Reggae Resonance · ניסיון</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label id="reggaeReverbControl" hidden>רים־שוט · ריוורב <input type="range" id="reggaeReverb" min="0" max="100" step="5" value="45"><b id="reggaeReverbOut">45%</b></label><span id="reggaePreviewControl" hidden><button type="button" id="reggaeTestSnare">▶ סנר פתוח</button> <button type="button" id="reggaeTestRim">▶ רים + ריוורב</button></span><label><input id="loop" type="checkbox" checked> לופ</label>
  <button id="reset">איפוס וריאציות פעילות</button>
 </div></details>
 <details class="fold" id="clickFold">
@@ -901,6 +901,7 @@ const sampleBuffers={};
 const samplePromises={};
 const sampleKey='groove-lab-sound-kit-v1';
 try{const stored=localStorage.getItem(sampleKey);if(['studio','dub','synth','acoustic','avl','salamanderReggae'].includes(stored))$('soundKit').value=stored;else $('soundKit').value='acoustic'}catch(e){$('soundKit').value='acoustic'}
+if(new URLSearchParams(location.search).get('kit')==='salamanderReggae')$('soundKit').value='salamanderReggae';
 function chosenSet(kit){return kit==='acoustic'?'acoustic':kit==='avl'?'avl':kit==='salamanderReggae'?'salamanderReggae':'studio'}
 function isReady(kit){const buffers=sampleBuffers[chosenSet(kit)];return buffers&&['hh','sn','kd'].every(k=>buffers[k]?.length)}
 function ensureSamples(kit=$('soundKit').value){
@@ -981,8 +982,17 @@ function makeReggaeReverb(){
  reggaeWet=ctx.createGain();reggaeWet.gain.value=.42;
  reggaeSend.connect(conv);conv.connect(lowpass);lowpass.connect(reggaeWet);reggaeWet.connect(bus);
 }
-function syncReggaeControl(){$('reggaeReverbControl').hidden=$('soundKit').value!=='salamanderReggae'}
+function syncReggaeControl(){const hide=$('soundKit').value!=='salamanderReggae';$('reggaeReverbControl').hidden=hide;$('reggaePreviewControl').hidden=hide}
 syncReggaeControl();
+async function demoReggae(key){
+ if(!init())return;
+ const success=await ensureSamples('salamanderReggae');if(!success)return;
+ const t=ctx.currentTime+.04;
+ if(key==='rim'){sampleHit('sn',t,'salamanderReggae',.92);sampleHit('rim',t,'salamanderReggae',.86)}
+ else sampleHit('sn',t,'salamanderReggae',1);
+}
+$('reggaeTestSnare').onclick=()=>demoReggae('sn');
+$('reggaeTestRim').onclick=()=>demoReggae('rim');
 $('reggaeReverb').oninput=()=>{$('reggaeReverbOut').textContent=$('reggaeReverb').value+'%'};
 function init(){if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return false;ctx=new C();bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}ctx.resume();if($('soundKit').value==='salamanderReggae')makeReggaeReverb();if($('soundKit').value!=='synth')ensureSamples();return true}
 function tone(t,hz,d,v,end){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(hz,t);if(end)o.frequency.exponentialRampToValueAtTime(end,t+d*.8);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(bus);o.start(t);o.stop(t+d)}
