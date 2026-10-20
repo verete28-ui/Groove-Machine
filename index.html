@@ -857,14 +857,14 @@ const sampleSets={
   // Salamander CC BY-SA 3.0: snareStick is cross-stick, not a true rimshot.
   root:'https://cdn.jsdelivr.net/gh/studiorack/salamander-drumkit@master/Samples/',
   files:{
-   kd:['kick2_OH_P_1.flac','kick2_OH_F_1.flac','kick2_OH_FF_1.flac'],
-   sn:['snare_OH_MP_1.flac','snare_OH_F_1.flac','snare_OH_FF_1.flac'],
-   snGhost:['snare_OH_Ghost_1.flac','snare_OH_Ghost_2.flac','snare_OH_Ghost_3.flac'],
-   rim:['snareStick_OH_F_1.flac','snareStick_OH_F_2.flac','snareStick_OH_F_3.flac'],
-   hh:['hihatClosed_OH_P_1.flac','hihatClosed_OH_F_1.flac'],
-   hhHalf:['hihatSemiOpen2_OH_P_1.flac','hihatSemiOpen2_OH_F_1.flac'],
-   hhOpen:['hihatOpen_OH_P_1.flac','hihatOpen_OH_F_1.flac'],
-   hhPedal:['hihatFoot_OH_MP_1.flac','hihatFoot_OH_MP_2.flac']
+   kd:['kick2_OH_F_1.flac'],
+   sn:['snare_OH_F_1.flac'],
+   snGhost:['snare_OH_Ghost_1.flac'],
+   rim:['snareStick_OH_F_1.flac'],
+   hh:['hihatClosed_OH_F_1.flac'],
+   hhHalf:['hihatSemiOpen2_OH_F_1.flac'],
+   hhOpen:['hihatOpen_OH_F_1.flac'],
+   hhPedal:['hihatFoot_OH_MP_1.flac']
   }
  },
 
@@ -912,13 +912,18 @@ function ensureSamples(kit=$('soundKit').value){
  const config=sampleSets[set];
  updateSampleStatus('טוען '+(set==='acoustic'?'סמפלים אקוסטיים…':set==='avl'?'דגימות AVL Black Pearl…':set==='salamanderReggae'?'סלמנדר רגאיי…':'סמפלים…'));
  const loadOne=async name=>{
-  const response=await fetch(config.root+name);
-  if(!response.ok)throw new Error(name+': HTTP '+response.status);
-  return await ctx.decodeAudioData(await response.arrayBuffer());
+  const sources=set==='salamanderReggae'?
+   [config.root+'?unused', 'https://raw.githubusercontent.com/studiorack/salamander-drumkit/master/Samples/'].map((u,i)=>i===0?config.root+name:u+name):[config.root+name];
+  let error;
+  for(const url of sources){
+   try{const response=await fetch(url);if(!response.ok)throw new Error(name+': HTTP '+response.status);return await ctx.decodeAudioData(await response.arrayBuffer())}
+   catch(e){error=e}
+  }
+  throw error;
  };
  samplePromises[set]=Promise.all(Object.entries(config.files).map(async ([key,files])=>[key,await Promise.all(files.map(loadOne))]))
   .then(pairs=>{sampleBuffers[set]=Object.fromEntries(pairs);updateSampleStatus();return true})
-  .catch(e=>{console.warn('Unable to load sample set',set,e);samplePromises[set]=null;updateSampleStatus('טעינת '+set+' נכשלה — בדוק חיבור לאינטרנט');return false});
+  .catch(e=>{console.warn('Unable to load sample set',set,e);samplePromises[set]=null;updateSampleStatus('טעינת '+set+' נכשלה: '+(e.message||e));return false});
  return samplePromises[set];
 }
 function updateSampleStatus(message){
@@ -986,7 +991,7 @@ function syncReggaeControl(){const hide=$('soundKit').value!=='salamanderReggae'
 syncReggaeControl();
 async function demoReggae(key){
  if(!init())return;
- const success=await ensureSamples('salamanderReggae');if(!success)return;
+ const success=await ensureSamples('salamanderReggae');if(!success){$('sampleStatus').textContent='הטעינה נכשלה. נסה לרענן את הדף.';return;}
  const t=ctx.currentTime+.04;
  if(key==='rim'){sampleHit('sn',t,'salamanderReggae',.92);sampleHit('rim',t,'salamanderReggae',.86)}
  else sampleHit('sn',t,'salamanderReggae',1);
