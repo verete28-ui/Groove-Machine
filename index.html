@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 2.6</title>
+<title>Groove Lab 2.7</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -33,18 +33,24 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .track:not(.is-muted) .step.hat-open{background:#bb9b52;color:#101821}.track:not(.is-muted) .step.hat-half{background:#6c92a5;color:#101821}.track:not(.is-muted) .step.hat-pedal{background:#728e69;color:#101821}
 .track.is-muted .step.hit{background:#476372}
 .track.dense,.beats.dense{gap:2px}.track.dense .step{border-radius:2px;font-size:9px}
+.beat-controls{display:grid;grid-template-columns:71px minmax(0,1fr);gap:3px;align-items:end;margin:7px 0}
+.beat-selectors{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.beat-selectors label{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;color:#c5d5df}
+.beat-selectors select{background:#263a48;color:#fff;border:1px solid #507084;border-radius:7px;padding:5px 2px;width:100%;font-size:12px}
+.beat-slice{display:grid;min-width:0;gap:2px}
+.beat-slice .step{min-width:0}
 .beats{display:grid;grid-template-columns:71px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
 #score{direction:ltr;overflow:hidden;background:#fff;color:#17212a;border-radius:8px;min-height:0;width:100%}#score svg{display:block;width:100%;height:auto;max-width:100%}
 .variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">2.6</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">2.7</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
  <label>BPM <input type="range" id="bpm" min="40" max="180" value="80"><b id="bpmOut">80</b></label>
  <label>חלוקת קצב <select id="rhythmGrid"><option value="straight">רגיל · 16 צעדים</option><option value="triplet">טריולות שמיניות · 12 צעדים</option><option value="triplet16">טריולות שש־עשריות · 24 צעדים</option><option value="mixed">משולב · חלוקה לכל פעמה</option></select></label>
- <div id="mixedBeats" class="control-grid" hidden><span class="small">חלוקה לפי פעמה:</span><label>1 <select data-beat="0"><option value="4">4</option><option value="3">3</option><option value="6">6</option></select></label><label>2 <select data-beat="1"><option value="4">4</option><option value="3">3</option><option value="6">6</option></select></label><label>3 <select data-beat="2"><option value="4">4</option><option value="3">3</option><option value="6">6</option></select></label><label>4 <select data-beat="3"><option value="4">4</option><option value="3">3</option><option value="6">6</option></select></label></div>
+
  <label id="swingSetting">Swing <input type="range" id="swing" min="50" max="75" value="50" step="1"><b id="swingOut">50%</b></label>
  <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label><input id="loop" type="checkbox" checked> לופ</label>
  <button id="reset">איפוס וריאציות פעילות</button>
@@ -67,7 +73,10 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 <details class="fold" id="practiceFold" open><summary>🥁 תרגול — סיקוונסר / תווים</summary><div class="fold-body">
 <div class="line" style="margin:0 0 12px 0"><span class="small">סאונד התופים</span><label class="small" style="display:flex;align-items:center;gap:7px"><input type="checkbox" id="drumsEnabled" checked> 🔊 הפעל תופים</label></div>
 <div class="tabs"><button class="active" data-view="seq">סיקוונסר</button><button data-view="score">תווים</button></div>
-<section class="panel"><div id="seq" class="grid"></div><p class="small">היי־האט וסנר: לחיצה רגילה להפעלה/כיבוי, לחיצה ארוכה (או לחצן ימני) לעריכת סוג המכה והעוצמה.</p><div id="scoreWrap" class="hide"><div id="score"></div><p id="scoreMsg" class="small">תיווי לתרגול · קריאה בלבד</p></div>
+<section class="panel">
+<div id="beatControls" class="beat-controls" dir="ltr"><span class="beat-placeholder"></span><div id="beatSelectors" class="beat-selectors"></div></div>
+<p class="small" id="beatHelp">חלוקה משותפת לכל הכלים: 4 = שש־עשריות, 3 = טריולות שמיניות, 6 = טריולות שש־עשריות.</p>
+<div id="seq" class="grid"></div><p class="small">היי־האט וסנר: לחיצה רגילה להפעלה/כיבוי, לחיצה ארוכה (או לחצן ימני) לעריכת סוג המכה והעוצמה.</p><div id="scoreWrap" class="hide"><div id="score"></div><p id="scoreMsg" class="small">תיווי לתרגול · קריאה בלבד</p></div>
 </section></div></details>
 
 <p class="small">לחיצה על משבצת עורכת את המקצב. שתי התצוגות חולקות את אותם נתונים. לכל כלי שמונה תבניות בעלות אופי ריתמי שונה. בחר A–H בנפרד להיי־האט, סנר ובס. עריכת הסיקוונסר משנה רק את הווריאציה הפעילה של אותו כלי. ההגדרות נשמרות בדפדפן. אפשר להשתיק כל כלי בנפרד דרך סמל הרמקול לידו, או את כל התופים ולהשמיע רק קליק. רנדומייז בוחר שילוב חדש של וריאציות לכל שלושת הכלים. בהגדרות אפשר לבחור ערכת סמפלים או צליל סינתטי; אם הסמפלים אינם זמינים, המנוע חוזר אוטומטית לסינתזה.</p>
@@ -300,7 +309,7 @@ function seq(){
  const host=$('seq');host.replaceChildren();
  patterns.forEach((a,r)=>{
   const row=document.createElement('div');row.className='track'+(trackMuted[r]?' is-muted':'');
-  row.style.gridTemplateColumns='34px 34px repeat('+stepCount()+',minmax(0,1fr))';
+  row.style.gridTemplateColumns='34px 34px repeat(4,minmax(0,1fr))';
   row.classList.toggle('dense',rhythmGrid==='triplet16'||rhythmGrid==='mixed');
   const label=document.createElement('span');label.textContent=names[r];row.append(label);
   const mute=document.createElement('button');mute.className='mute'+(trackMuted[r]?' is-muted':'');
@@ -310,6 +319,15 @@ function seq(){
   mute.setAttribute('aria-pressed',String(trackMuted[r]));
   mute.onclick=()=>setTrackMute(r);
   row.append(mute);
+  let group=document.createElement('div');
+  const counts=rhythmGrid==='mixed'?mixedBeats:Array(4).fill(subdivisions());
+  let currentBeat=0,firstStep=0;
+  function appendBeatGroup(){
+   group=document.createElement('div');group.className='beat-slice';
+   group.style.gridTemplateColumns='repeat('+counts[currentBeat]+',minmax(0,1fr))';
+   row.append(group);
+  }
+  appendBeatGroup();
   a.forEach((hit,i)=>{
    const b=document.createElement('button');
    const level=r===1&&hit?snareLevel(i):'normal';
@@ -337,16 +355,24 @@ function seq(){
     b.addEventListener('contextmenu',e=>{e.preventDefault();cancelLong();suppressClick=true;openEditor()});
     b.onclick=()=>{if(suppressClick){suppressClick=false;return}a[i]=!a[i];saveVariations();seq();score()};
    }else b.onclick=()=>{a[i]=!a[i];saveVariations();seq();score()};
-   row.append(b);
+   if(i>=firstStep+counts[currentBeat]){firstStep+=counts[currentBeat];currentBeat++;appendBeatGroup()}
+   group.append(b);
   });
   host.append(row);
  });
- const ticks=document.createElement('div');ticks.className='beats';
- ticks.style.gridTemplateColumns='71px repeat('+stepCount()+',minmax(0,1fr))';
- ticks.classList.toggle('dense',rhythmGrid==='triplet16'||rhythmGrid==='mixed');
- const divisions=subdivisions();
- ticks.innerHTML='<span></span>'+Array.from({length:stepCount()},(_,i)=>'<span>'+(rhythmGrid==='mixed'?(beatStarts().includes(i)?getStepBeat(i)+1:''):(i%divisions===0?i/divisions+1:''))+'</span>').join('');
- host.append(ticks);
+ const header=$('beatSelectors');header.replaceChildren();
+ const currentDivisions=rhythmGrid==='mixed'?mixedBeats:Array(4).fill(subdivisions());
+ currentDivisions.forEach((n,i)=>{
+  const label=document.createElement('label');
+  label.textContent='פעמה '+(i+1);
+  const select=document.createElement('select');
+  [4,3,6].forEach(v=>{const option=document.createElement('option');option.value=String(v);option.textContent=v===4?'4 · רגיל':v===3?'3 · טריולה':'6 · טריולה';select.append(option)});
+  select.value=String(n);
+  select.setAttribute('aria-label','חלוקה לפעמה '+(i+1));
+  select.onchange=()=>changeBeatDivision(i,Number(select.value));
+  label.append(select);header.append(label);
+ });
+
 }
 function score(){
  const host=$('score');host.replaceChildren();
@@ -696,8 +722,6 @@ $('soundKit').onchange=()=>{
 };
 function syncRhythmSettings(){
  $('swingSetting').style.display=rhythmGrid==='straight'?'flex':'none';
- $('mixedBeats').hidden=rhythmGrid!=='mixed';
- document.querySelectorAll('[data-beat]').forEach((el,i)=>el.value=String(mixedBeats[i]));
  $('clickDivision').querySelector('option[value="2"]').textContent='שמיניות';
  $('clickDivision').querySelector('option[value="1"]').textContent=rhythmGrid==='straight'?'שש־עשריות':'כל טריולה';
  $('clickDivision').value=rhythmGrid==='triplet'?'4':$('clickDivision').value;
@@ -708,14 +732,23 @@ $('rhythmGrid').onchange=()=>{
  rhythmGrid=$('rhythmGrid').value;
  instrumentBanks=rhythmGrid==='mixed'?mixedBanks:rhythmGrid==='triplet16'?triplet16Banks:rhythmGrid==='triplet'?tripletBanks:straightBanks;
  snareDynamics=rhythmGrid==='mixed'?mixedSnareDynamics:rhythmGrid==='triplet16'?triplet16SnareDynamics:rhythmGrid==='triplet'?tripletSnareDynamics:straightSnareDynamics;
- hatBanks=rhythmGrid==='mixed'?mixedHatBanks:rhythmGrid==='triplet16'?tripletHatBanks:rhythmGrid==='triplet'?tripletHatBanks:straightHatBanks;
+ hatBanks=rhythmGrid==='mixed'?mixedHatBanks:rhythmGrid==='triplet16'?triplet16HatBanks:rhythmGrid==='triplet'?tripletHatBanks:straightHatBanks;
  refreshPatterns();shownStep=-1;
  try{localStorage.setItem(gridKey,rhythmGrid)}catch(e){}
  syncRhythmSettings();seq();score();
 };
-document.querySelectorAll('[data-beat]').forEach(el=>el.onchange=()=>{
+function changeBeatDivision(beat,division){
+ if(![3,4,6].includes(division)||beat<0||beat>3)return;
  if(running)stop();
- const updated=[...mixedBeats];updated[Number(el.dataset.beat)]=Number(el.value);
+ if(rhythmGrid!=='mixed'){
+  // One shared beat subdivision selector controls all three instruments.
+  rhythmGrid='mixed';
+  $('rhythmGrid').value='mixed';
+  instrumentBanks=mixedBanks;snareDynamics=mixedSnareDynamics;hatBanks=mixedHatBanks;
+  try{localStorage.setItem(gridKey,rhythmGrid)}catch(e){}
+ }
+ if(mixedBeats[beat]===division){syncRhythmSettings();seq();score();return}
+ const updated=mixedBeats.slice();updated[beat]=division;
  const old=mixedBeats.slice(),oldStarts=beatStarts(),oldBanks=mixedBanks,oldSnare=mixedSnareDynamics,oldHats=mixedHatBanks;
  const transform=row=>updated.flatMap((count,b)=>Array.from({length:count},(_,j)=>row[oldStarts[b]+Math.min(old[b]-1,Math.round(j*old[b]/count))]));
  mixedBeats=updated;mixedDefaults=makeMixedDefaults();
@@ -725,8 +758,8 @@ document.querySelectorAll('[data-beat]').forEach(el=>el.onchange=()=>{
  instrumentBanks=mixedBanks;snareDynamics=mixedSnareDynamics;hatBanks=mixedHatBanks;
  saveVariations();saveSnareDynamics();saveHats();
  try{localStorage.setItem(mixedBeatKey,JSON.stringify(mixedBeats))}catch(e){}
- refreshPatterns();seq();score();
-});
+ refreshPatterns();syncRhythmSettings();seq();score();
+}
 $('swing').oninput=()=>{$('swingOut').textContent=$('swing').value+'%'};
 function updateClickSummary(){
  $('clickSummary').textContent=$('metro').checked?('פעיל · '+$('clickDivision').selectedOptions[0].textContent):'כבוי';
