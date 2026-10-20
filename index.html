@@ -214,8 +214,9 @@ const cycleBars=()=>selected.some((v,r)=>variationLength(r,v)===2)?2:1;
 function saveLengths(){try{localStorage.setItem(lengthKey,JSON.stringify(variationLengths))}catch(e){}}
 function toggleVariationLength(r,i){
  variationLengths[r][i]=variationLengths[r][i]===2?1:2;saveLengths();
+ if(variationLengths[r][i]===2)ensureSecond(r,i);
  if(!running){paintVariations();seq();score()}
- else{paintVariations();$('status').textContent='אורך הווריאציה עודכן; המחזור הבא ישתמש באורך החדש'}
+ else{paintVariations();$('status').textContent='אורך הווריאציה עודכן; המחזור הבא ישתמש באורך החדש';seq();score()}
 }
 
 let patterns=instrumentBanks.map((bank,r)=>bank[selected[r]]);
@@ -903,7 +904,10 @@ function metronomeClick(t,accent,volume){
  osc.connect(gain);gain.connect(bus);
  osc.start(t);osc.stop(t+.06);
 }
-function sound(i,t){
+function sound(i,t,bar=playingBar){
+ const patterns=barPatterns(bar),currentHat=step=>hatAt(step,bar);
+ const snareGain=step=>({ghost:.24,normal:1,accent:1.38})[snareLevelAt(step,bar)]||1;
+ const hatVelocity=step=>({soft:.38,normal:1,accent:1.35})[hatAt(step,bar).level]||1;
  if($('drumsEnabled').checked){
   const kit=$('soundKit').value;
   const sample=kit!=='synth';
@@ -924,7 +928,7 @@ function sound(i,t){
  if($('metro').checked){
   const div=Number($('clickDivision').value);
   const clickEvery=rhythmGrid==='mixed'?1:rhythmGrid==='triplet16'?(div===4?6:div===2?3:1):rhythmGrid==='triplet'?(div===4?3:1):div;
-  if(rhythmGrid==='mixed'?(div===4?i%12===0:div===2?i%6===0:offsets(mixedBeats[getStepBeat(i)]).includes(i%12)):i%clickEvery===0){
+  if(rhythmGrid==='mixed'?(div===4?i%12===0:div===2?i%6===0:offsets(beatDivisionsForBar(bar)[getStepBeat(i)]).includes(i%12)):i%clickEvery===0){
    const accent=$('clickAccent').checked&&i===0;
    const volume=Number($('clickVolume').value)/100;
    metronomeClick(t,accent,volume);
@@ -945,15 +949,36 @@ function mark(s,bar=shownBar){
  $('seq').querySelectorAll('.bar-panel').forEach(node=>node.classList.toggle('is-active',Number(node.dataset.bar)===bar));
  markScore(s,bar);
 }
-function stop(){running=false;applyQueuedBeatDivisions();activeOpenHats=[];pending=[null,null,null];paintVariations();rev++;clearInterval(timer);timer=null;position=0;mark(-1);$('play').textContent='▶ נגן';$('status').textContent='מוכן';if(ctx){bus.gain.setTargetAtTime(0,ctx.currentTime,.008);bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}}
-function tick(){if(!running)return;const n=rev;while(next<ctx.currentTime+.09&&running){const i=position,t=next;
-  if(i===0){applyQueuedBeatDivisions();applyPendingVariations();}
-  sound(i,t);setTimeout(()=>{if(running&&rev===n){mark(i);$('status').textContent='פעמה '+(getStepBeat(i)+1)}},Math.max(0,(t-ctx.currentTime)*1000));const quarter=60/Number($('bpm').value);
- const ratio=Number($('swing').value)/100;
- // Eighth swing: two eighths per beat split by ratio, with the two sixteenths within each half evenly spaced.
- next+=rhythmGrid==='mixed'?quarter/12:rhythmGrid==='triplet16'?quarter/6:rhythmGrid==='triplet'?quarter/3:quarter*((i%4)<2?ratio/2:(1-ratio)/2);
- position++;if(position===stepCount()){position=0;if(!$('loop').checked){clearInterval(timer);timer=null;setTimeout(()=>{if(rev===n)stop()},Math.max(0,(next-ctx.currentTime)*1000));break}}}}
-$('play').onclick=()=>{if(running){stop();return}if(!init())return;running=true;rev++;position=0;next=ctx.currentTime+.05;$('play').textContent='Ⅱ השהה';tick();timer=setInterval(tick,20)};
+function stop(){running=false;applyQueuedBeatDivisions();playingBar=0;shownBar=0;activeOpenHats=[];pending=[null,null,null];paintVariations();rev++;clearInterval(timer);timer=null;position=0;mark(-1);$('play').textContent='▶ נגן';$('status').textContent='מוכן';if(ctx){bus.gain.setTargetAtTime(0,ctx.currentTime,.008);bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}}
+function tick(){
+ if(!running)return;
+ const revision=rev;
+ while(next<ctx.currentTime+.09&&running){
+  const i=position,t=next;
+  // Keep a single continuous 1- or 2-bar cycle, without restarting AudioContext.
+  if(i===0&&playingBar===0){applyQueuedBeatDivisions();applyPendingVariations();}
+  const bar=playingBar;
+  sound(i,t,bar);
+  setTimeout(()=>{if(running&&rev===revision){
+   mark(i,bar);$('status').textContent='תיבה '+(bar+1)+' · פעמה '+(getStepBeat(i)+1)
+  }},Math.max(0,(t-ctx.currentTime)*1000));
+  const quarter=60/Number($('bpm').value),ratio=Number($('swing').value)/100;
+  next+=rhythmGrid==='mixed'?quarter/12:rhythmGrid==='triplet16'?quarter/6:rhythmGrid==='triplet'?quarter/3:quarter*((i%4)<2?ratio/2:(1-ratio)/2);
+  position++;
+  if(position===stepCount()){
+   position=0;playingBar++;
+   if(playingBar>=cycleBars()){
+    playingBar=0;
+    if(!$('loop').checked){
+     clearInterval(timer);timer=null;
+     setTimeout(()=>{if(rev===revision)stop()},Math.max(0,(next-ctx.currentTime)*1000));
+     break;
+    }
+   }
+  }
+ }
+}
+$('play').onclick=()=>{if(running){stop();return}if(!init())return;running=true;rev++;position=0;playingBar=0;shownBar=0;next=ctx.currentTime+.05;$('play').textContent='Ⅱ השהה';tick();timer=setInterval(tick,20)};
 $('stop').onclick=stop;
 $('bpm').oninput=()=>{$('bpmOut').textContent=$('bpm').value};
 $('soundKit').onchange=()=>{
@@ -1058,6 +1083,8 @@ document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{document.quer
 $('reset').onclick=()=>{
  for(let r=0;r<3;r++)instrumentBanks[r][selected[r]]=(rhythmGrid==='mixed'?mixedDefaults:rhythmGrid==='triplet16'?triplet16Defaults:rhythmGrid==='triplet'?tripletDefaults:extendedDefaults)[r][selected[r]].slice();
  hatBanks[selected[0]]=Array.from({length:stepCount()},defaultHatStep);saveHats();
+ for(let r=0;r<3;r++)if(variationLength(r)===2){secondData().initialized[r][selected[r]]=false;ensureSecond(r,selected[r])}
+ saveSecond();
  snareDynamics[selected[1]]=Array(stepCount()).fill('normal');saveSnareDynamics();
  refreshPatterns();saveVariations();seq();score();
 };
@@ -1073,6 +1100,15 @@ $('copyVar').onclick=()=>{
  if(dest<0){alert('בחר A עד H');return}
  if(dest===selected[r])return;
  instrumentBanks[r][dest]=instrumentBanks[r][selected[r]].slice();
+ variationLengths[r][dest]=variationLengths[r][selected[r]];saveLengths();
+ if(variationLength(r)===2){
+  ensureSecond(r,selected[r]);
+  secondData().patterns[r][dest]=secondData().patterns[r][selected[r]].slice();
+  secondData().initialized[r][dest]=true;
+  if(r===1)secondData().snare[dest]=secondData().snare[selected[r]].slice();
+  if(r===0)secondData().hats[dest]=secondData().hats[selected[r]].map(v=>({...v}));
+  saveSecond();
+ }
  if(r===0){hatBanks[dest]=hatBanks[selected[0]].map(v=>({...v}));saveHats()}
  if(r===1){snareDynamics[dest]=snareDynamics[selected[1]].slice();saveSnareDynamics()}
  saveVariations();
@@ -1080,7 +1116,7 @@ $('copyVar').onclick=()=>{
 };
 $('hatEditor').querySelectorAll('[data-hat-type]').forEach(b=>b.onclick=()=>changeHat('type',b.dataset.hatType));
 $('hatEditor').querySelectorAll('[data-hat-level]').forEach(b=>b.onclick=()=>changeHat('level',b.dataset.hatLevel));
-$('hatRemove').onclick=()=>{if(editedHatStep!==null){patterns[0][editedHatStep]=false;saveVariations();closeHatEditor();seq();score()}};
+$('hatRemove').onclick=()=>{if(editedHatStep!==null){patternFor(0,editedHatBar)[editedHatStep]=false;saveVariations();saveSecond();closeHatEditor();seq();score()}};
 $('closeHatEditor').onclick=closeHatEditor;
 $('hatEditor').onclick=e=>{if(e.target===$('hatEditor'))closeHatEditor()};
 $('snareEditor').querySelectorAll('[data-snare-level]').forEach(b=>b.onclick=()=>assignSnareLevel(b.dataset.snareLevel));
