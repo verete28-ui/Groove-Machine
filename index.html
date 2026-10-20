@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 0.5</title>
+<title>Groove Lab 0.6</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -14,12 +14,12 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">0.5</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div><button id="toggle">⚙ הגדרות ▾</button></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">0.6</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div><button id="toggle">⚙ הגדרות ▾</button></header>
 <section id="settings" class="panel line"><label>BPM <input type="range" id="bpm" min="40" max="180" value="80"> <b id="bpmOut">80</b></label><label><input id="loop" type="checkbox" checked> לופ</label><label><input id="metro" type="checkbox"> קליק</label><button id="reset">איפוס</button></section>
 <div class="tabs"><button class="active" data-view="seq">סיקוונסר</button><button data-view="score">תווים</button></div>
 <section class="panel"><div id="seq" class="grid"></div><div id="scoreWrap" class="hide"><div id="score"></div><p id="scoreMsg" class="small">תיווי לתרגול · קריאה בלבד</p></div>
 <div class="transport"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div></section>
-<p class="small">לחיצה על משבצת עורכת את המקצב. שתי התצוגות חולקות את אותם נתונים. תיווי חופשי וסינקופות עדיין בפיתוח.</p>
+<p class="small">לחיצה על משבצת עורכת את המקצב. שתי התצוגות חולקות את אותם נתונים. תיווי אוטומטי של מכות ושקט בכל התופים יחד; התצוגה עדיין בגרסת בדיקה.</p>
 <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
 <script>
 (()=>{
@@ -28,17 +28,80 @@ let patterns=[Array.from({length:16},(_,i)=>i%2===0),Array.from({length:16},(_,i
 const names=['HH','SN','KD'];let ctx,bus,running=false,timer=null,position=0,next=0,rev=0;
 function seq(){const host=$('seq');host.replaceChildren();patterns.forEach((a,r)=>{const row=document.createElement('div');row.className='track';const label=document.createElement('span');label.textContent=names[r];row.append(label);a.forEach((hit,i)=>{const b=document.createElement('button');b.className='step'+(hit?' hit':'');b.setAttribute('aria-label',names[r]+' step '+(i+1));b.onclick=()=>{a[i]=!a[i];seq();score()};row.append(b)});host.append(row)});
 const ticks=document.createElement('div');ticks.className='beats';ticks.innerHTML='<span></span>'+Array.from({length:16},(_,i)=>'<span>'+(i%4===0?(i/4+1):'')+'</span>').join('');host.append(ticks)}
-function score(){const host=$('score');host.replaceChildren();const VF=window.Vex?.Flow;if(!VF){$('scoreMsg').textContent='ספריית התווים אינה זמינה. בדוק חיבור לאינטרנט.';return}
-try{
-const renderer=new VF.Renderer(host,VF.Renderer.Backends.SVG);renderer.resize(680,230);const c=renderer.getContext(),stave=new VF.Stave(35,35,610);stave.addClef('percussion').addTimeSignature('4/4');stave.setContext(c).draw();
-const hands=[],feet=[];
-for(let i=0;i<16;i+=2){const keys=[];if(patterns[0][i])keys.push('g/5/x');if(patterns[1][i])keys.push('c/5');hands.push(new VF.StaveNote({clef:'percussion',keys:keys.length?keys:['b/4'],duration:keys.length?'8':'8r',stem_direction:1}))}
-for(let i=0;i<16;i++){feet.push(new VF.StaveNote({clef:'percussion',keys:['f/4'],duration:patterns[2][i]?'16':'16r',stem_direction:-1}))}
-const h=new VF.Voice({num_beats:4,beat_value:4}).addTickables(hands),f=new VF.Voice({num_beats:4,beat_value:4}).addTickables(feet);
-new VF.Formatter().joinVoices([h,f]).format([h,f],525);h.draw(c,stave);f.draw(c,stave);
-for(let j=0;j<4;j++)new VF.Beam(hands.slice(j*2,j*2+2)).setContext(c).draw();
-$('scoreMsg').textContent='גרסה ניסיונית: שינויי שש־עשריות בהיי־האט או בסנר עדיין אינם מתווים';
-}catch(e){$('scoreMsg').textContent='שגיאה בתיווי: '+e.message}}
+function score(){
+ const host=$('score');host.replaceChildren();
+ const VF=window.Vex?.Flow;
+ if(!VF){$('scoreMsg').textContent='ספריית התווים אינה זמינה. בדוק חיבור לאינטרנט.';return}
+ try{
+  const renderer=new VF.Renderer(host,VF.Renderer.Backends.SVG);
+  renderer.resize(710,205);
+  const c=renderer.getContext(),stave=new VF.Stave(40,30,625);
+  stave.addClef('percussion').addTimeSignature('4/4');
+  stave.setContext(c).draw();
+  // A single complete rhythmic voice: every attack in the sequencer is represented.
+  // Rests describe silence of the entire kit, never silence of an individual drum.
+  const notes=[],beamGroups=[];
+  const durations={1:'16',2:'8',4:'q'};
+  const anyHit=i=>patterns.some(row=>row[i]);
+  for(let beat=0;beat<4;beat++){
+   const onset=[];
+   for(let s=beat*4;s<(beat+1)*4;s++)if(anyHit(s))onset.push(s);
+   let cursor=beat*4;
+   const beatNotes=[];
+   const append=(at,length,rest)=>{
+    const keys=[];
+    if(!rest){
+     if(patterns[2][at])keys.push('f/4');
+     if(patterns[1][at])keys.push('c/5');
+     if(patterns[0][at])keys.push('g/5/x');
+    }
+    const n=new VF.StaveNote({
+     clef:'percussion',keys:rest?['b/4']:keys,
+     duration:durations[length]+(rest?'r':''),
+     stem_direction:1
+    });
+    // Selectable positions in the display remain read-only.
+    notes.push(n);beatNotes.push({note:n,rest,length});
+   };
+   for(let j=0;j<onset.length;j++){
+    const at=onset[j];
+    // Split silence into conventional aligned durations.
+    while(cursor<at){
+     let size=4;
+     while(size>at-cursor||cursor%size!==0)size/=2;
+     append(cursor,size,true);cursor+=size;
+    }
+    const last=j+1<onset.length?onset[j+1]:(beat+1)*4;
+    let remaining=last-at,atPart=at;
+    while(remaining>0){
+     let size=4;
+     while(size>remaining||atPart%size!==0)size/=2;
+     append(atPart,size,atPart!==at);
+     remaining-=size;atPart+=size;cursor=atPart;
+    }
+   }
+   while(cursor<(beat+1)*4){
+    let size=4;
+    while(size>(beat+1)*4-cursor||cursor%size!==0)size/=2;
+    append(cursor,size,true);cursor+=size;
+   }
+   // Beaming removes flags from connected eighth and sixteenth notes.
+   let group=[];
+   const flush=()=>{if(group.length>=2)beamGroups.push(group);group=[]};
+   for(const item of beatNotes){
+    if(item.rest||item.length>=4)flush();
+    else group.push(item.note);
+   }
+   flush();
+  }
+  const voice=new VF.Voice({num_beats:4,beat_value:4});
+  voice.addTickables(notes);
+  new VF.Formatter().joinVoices([voice]).format([voice],520);
+  voice.draw(c,stave);
+  beamGroups.forEach(group=>new VF.Beam(group).setContext(c).draw());
+  $('scoreMsg').textContent='קול ריתמי מאוחד: אין הפסקות לבס; קורות מחליפות דגלונים. כל 16 הצעדים נכללים.';
+ }catch(e){$('scoreMsg').textContent='שגיאה בתיווי: '+e.message}
+}
 function init(){if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return false;ctx=new C();bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}ctx.resume();return true}
 function tone(t,hz,d,v,end){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(hz,t);if(end)o.frequency.exponentialRampToValueAtTime(end,t+d*.8);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(bus);o.start(t);o.stop(t+d)}
 function noise(t,d,hz,v){const buf=ctx.createBuffer(1,Math.ceil(d*ctx.sampleRate),ctx.sampleRate),a=buf.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1;const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=buf;f.type='highpass';f.frequency.value=hz;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(f);f.connect(g);g.connect(bus);s.start(t);s.stop(t+d)}
