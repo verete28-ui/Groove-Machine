@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 1.8</title>
+<title>Groove Lab 1.9</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -29,13 +29,13 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">1.8</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">1.9</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
  <label>BPM <input type="range" id="bpm" min="40" max="180" value="80"><b id="bpmOut">80</b></label>
  <label>Swing <input type="range" id="swing" min="50" max="75" value="50" step="1"><b id="swingOut">50%</b></label>
- <label>ערכת צלילים <select id="soundKit"><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label><input id="loop" type="checkbox" checked> לופ</label>
+ <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label><input id="loop" type="checkbox" checked> לופ</label>
  <button id="reset">איפוס וריאציות פעילות</button>
 </div></details>
 <details class="fold" id="clickFold">
@@ -286,51 +286,69 @@ function score(){
   $('scoreMsg').textContent='תיווי בסנכרון עם הנגן · הפסקות מדויקות גם בפעמה 4';
  }catch(e){$('scoreMsg').textContent='שגיאה בתיווי: '+e.message}
 }
-const sampleRoot='https://cdn.jsdelivr.net/gh/teropa/drumkit@master/src/assets/';
-const sampleNames={hh:['hatClosed.mp3','hatClosed2.mp3'],sn:['snare.mp3','snare2.mp3','snare3.mp3'],kd:['kick.mp3']};
-const sampleBuffers={hh:[],sn:[],kd:[]};
-let sampleLoad=null;
+const sampleSets={
+ acoustic:{
+  root:'https://cdn.jsdelivr.net/gh/studiorack/salamander-drumkit@master/Samples/',
+  files:{
+   hh:['hihatClosed_OH_F_1.flac','hihatClosed_OH_F_2.flac','hihatClosed_OH_F_3.flac'],
+   sn:['snare2_OH_F_1.flac','snare2_OH_F_2.flac','snare2_OH_F_3.flac'],
+   kd:['kick_OH_F_1.flac','kick_OH_F_2.flac','kick_OH_F_3.flac']
+  }
+ },
+ studio:{
+  root:'https://cdn.jsdelivr.net/gh/teropa/drumkit@master/src/assets/',
+  files:{hh:['hatClosed.mp3','hatClosed2.mp3'],sn:['snare.mp3','snare2.mp3','snare3.mp3'],kd:['kick.mp3']}
+ }
+};
+const sampleBuffers={};
+const samplePromises={};
 const sampleKey='groove-lab-sound-kit-v1';
-try{const stored=localStorage.getItem(sampleKey);if(['studio','dub','synth'].includes(stored))$('soundKit').value=stored}catch(e){}
-function ensureSamples(){
- if(sampleLoad)return sampleLoad;
- if(!ctx)return Promise.resolve(false);
- $('sampleStatus').textContent='טוען סמפלים…';
- const fetchOne=async filename=>{
-  const res=await fetch(sampleRoot+filename);
-  if(!res.ok)throw new Error('HTTP '+res.status);
-  const data=await res.arrayBuffer();
-  return await ctx.decodeAudioData(data);
+try{const stored=localStorage.getItem(sampleKey);if(['studio','dub','synth','acoustic'].includes(stored))$('soundKit').value=stored;else $('soundKit').value='acoustic'}catch(e){$('soundKit').value='acoustic'}
+function chosenSet(kit){return kit==='acoustic'?'acoustic':'studio'}
+function isReady(kit){const buffers=sampleBuffers[chosenSet(kit)];return buffers&&['hh','sn','kd'].every(k=>buffers[k]?.length)}
+function ensureSamples(kit=$('soundKit').value){
+ if(kit==='synth'||!ctx)return Promise.resolve(false);
+ const set=chosenSet(kit);
+ if(isReady(kit)){updateSampleStatus();return Promise.resolve(true)}
+ if(samplePromises[set])return samplePromises[set];
+ const config=sampleSets[set];
+ updateSampleStatus('טוען '+(set==='acoustic'?'סמפלים אקוסטיים…':'סמפלים…'));
+ const loadOne=async name=>{
+  const response=await fetch(config.root+name);
+  if(!response.ok)throw new Error(name+': HTTP '+response.status);
+  return await ctx.decodeAudioData(await response.arrayBuffer());
  };
- sampleLoad=Promise.all(Object.entries(sampleNames).map(async([k,files])=>{
-  sampleBuffers[k]=await Promise.all(files.map(fetchOne));
- })).then(()=>{$('sampleStatus').textContent='סמפלים מוכנים';return true})
- .catch(err=>{
-  sampleLoad=null;
-  Object.keys(sampleBuffers).forEach(k=>sampleBuffers[k]=[]);
-  $('sampleStatus').textContent='לא ניתן לטעון סמפלים — משתמש בצליל המקורי';
-  console.warn('Sample loading failed:',err);
-  return false;
- });
- return sampleLoad;
+ samplePromises[set]=Promise.all(Object.entries(config.files).map(async ([key,files])=>[key,await Promise.all(files.map(loadOne))]))
+  .then(pairs=>{sampleBuffers[set]=Object.fromEntries(pairs);updateSampleStatus();return true})
+  .catch(e=>{console.warn('Unable to load sample set',set,e);samplePromises[set]=null;updateSampleStatus('טעינת '+set+' נכשלה — משתמש בסינתזה');return false});
+ return samplePromises[set];
 }
-function sampleHit(k,t,vintage){
- const pool=sampleBuffers[k];
- if(!pool.length)return false;
- const src=ctx.createBufferSource();
- src.buffer=pool[Math.floor(Math.random()*pool.length)];
- const filter=ctx.createBiquadFilter(),envelope=ctx.createGain();
- filter.type='lowpass';
- filter.frequency.value=vintage?(k==='hh'?3800:k==='sn'?3300:1100):18000;
- const gain=vintage?(k==='hh'?.35:k==='sn'?.55:.78):(k==='hh'?.43:k==='sn'?.70:.90);
- envelope.gain.setValueAtTime(gain,t);
- const release=vintage?(k==='hh'?.10:k==='sn'?.20:.36):(k==='hh'?.24:k==='sn'?.5:.8);
- const duration=Math.min(src.buffer.duration,release);
- envelope.gain.setValueAtTime(gain,t);
- envelope.gain.setValueAtTime(gain,t+Math.min(.012,duration*.2));
- envelope.gain.exponentialRampToValueAtTime(.001,t+Math.max(.03,duration));
- src.connect(filter);filter.connect(envelope);envelope.connect(bus);
- src.start(t);src.stop(t+Math.max(.04,duration+.01));
+function updateSampleStatus(message){
+ $('sampleStatus').textContent=message||($('soundKit').value==='synth'?'צלילים סינתטיים':isReady($('soundKit').value)?'✓ סמפלים מוקלטים פעילים':'סמפלים עדיין לא נטענו');
+}
+function sampleHit(key,time,kit){
+ const set=chosenSet(kit),buffers=sampleBuffers[set]?.[key];
+ if(!buffers?.length)return false;
+ const src=ctx.createBufferSource(),gain=ctx.createGain();
+ const buffer=buffers[Math.floor(Math.random()*buffers.length)];
+ src.buffer=buffer;
+ const isDub=kit==='dub',isAcoustic=kit==='acoustic';
+ const level=isAcoustic?({hh:.34,sn:.58,kd:.78}[key]):isDub?({hh:.32,sn:.52,kd:.75}[key]):({hh:.43,sn:.66,kd:.85}[key]);
+ gain.gain.setValueAtTime(level,time);
+ let end=buffer.duration,output=gain;
+ if(isDub){
+  const filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=key==='hh'?4200:key==='sn'?3500:1900;
+  src.connect(filter);filter.connect(gain);
+  end=Math.min(buffer.duration,key==='hh'?.25:key==='sn'?.38:.70);
+  gain.gain.setValueAtTime(level,time+Math.max(.001,end-.045));
+  gain.gain.exponentialRampToValueAtTime(.001,time+end);
+ }else {
+  // Keep the original recorded transient and full natural decay.
+  src.connect(gain);
+ }
+ gain.connect(bus);
+ src.start(time);
+ if(isDub)src.stop(time+end+.005);
  return true;
 }
 function init(){if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return false;ctx=new C();bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}ctx.resume();if($('soundKit').value!=='synth')ensureSamples();return true}
@@ -351,10 +369,10 @@ function metronomeClick(t,accent,volume){
 function sound(i,t){
  if($('drumsEnabled').checked){
   const kit=$('soundKit').value;
-  const sample=kit!=='synth',vintage=kit==='dub';
-  if(!trackMuted[0]&&patterns[0][i]&&(!sample||!sampleHit('hh',t,vintage)))noise(t,.045,6400,.24);
-  if(!trackMuted[1]&&patterns[1][i]&&(!sample||!sampleHit('sn',t,vintage))){noise(t,.13,1100,.48);tone(t,170,.07,.15)}
-  if(!trackMuted[2]&&patterns[2][i]&&(!sample||!sampleHit('kd',t,vintage)))tone(t,145,.24,.85,43);
+  const sample=kit!=='synth';
+  if(!trackMuted[0]&&patterns[0][i]&&(!sample||!sampleHit('hh',t,kit)))noise(t,.045,6400,.24);
+  if(!trackMuted[1]&&patterns[1][i]&&(!sample||!sampleHit('sn',t,kit))){noise(t,.13,1100,.48);tone(t,170,.07,.15)}
+  if(!trackMuted[2]&&patterns[2][i]&&(!sample||!sampleHit('kd',t,kit)))tone(t,145,.24,.85,43);
  }
  if($('metro').checked){
   const div=Number($('clickDivision').value);
@@ -380,7 +398,7 @@ $('bpm').oninput=()=>{$('bpmOut').textContent=$('bpm').value};
 $('soundKit').onchange=()=>{
  try{localStorage.setItem(sampleKey,$('soundKit').value)}catch(e){}
  if($('soundKit').value!=='synth'&&ctx)ensureSamples();
- if($('soundKit').value==='synth')$('sampleStatus').textContent='צליל סינתטי מקורי';
+ updateSampleStatus();
 };
 $('swing').oninput=()=>{$('swingOut').textContent=$('swing').value+'%'};
 function updateClickSummary(){
@@ -419,4 +437,4 @@ $('copyVar').onclick=()=>{
 };
 paintVariations();seq();window.addEventListener('load',score);
 })();
-</script><p class="small">קרדיט לסמפלים: <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>; הקלטות מקור מ־Freesound, רישיונות CC BY ו־CC0 כמפורט במקור. ערכת Vintage/Dub היא עיבוד בזמן אמת של אותה ספריית סמפלים.</p></main></html>
+</script><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת.</p></main></html>
