@@ -12,7 +12,7 @@ input[type=range]{width:100%;accent-color:#28b3d0}button{background:#1d7895;colo
 .tiny{font-size:12px;color:#b1c5cf}.row{display:flex;align-items:center;gap:12px}.muted{color:#b0c6d1}
 </style></head><body><main>
 <h1>🥁 דפדפן הסאמפלים של Salamander</h1>
-<p>כל <strong>536</strong> קובצי ה־FLAC המקוריים, כולל סוגי הקיק, הסנר, ההיי־האט והמצילות שלא נמצאים עדיין במכונה. הכל מושמע כפי שהוקלט, בלי סינתזה, ריוורב או פילטר.</p>
+<p>כל <strong>536</strong> קובצי ה־FLAC המקוריים, כולל סוגי הקיק, הסנר, ההיי־האט והמצילות שלא נמצאים עדיין במכונה. הכל מושמע כפי שהוקלט, בלי סינתזה, ריוורב או פילטר. שתי הדגימות הבאות נטענות מראש אחרי השמעה.</p>
 <div class="panel controls">
 <label>קבוצת כלים<select id="family"><option value="">כל הכלים</option><option value="kick">קיקים</option><option value="snare">סנרים</option><option value="hihat">היי־האט</option><option value="tom">טומים</option><option value="ride">רייד</option><option value="crash">קראש</option><option value="china">צ'יינה</option><option value="splash">ספלאש</option><option value="cowbell">קאובל</option><option value="bellchime">Bell Chime</option></select></label>
 <label>עוצמת ההקלטה<select id="dynamics"><option value="">כל העוצמות</option><option value="PP">חלש מאוד · PP</option><option value="P">חלש · P</option><option value="MP">בינוני חלש · MP</option><option value="Ghost">Ghost</option><option value="F">חזק · F</option><option value="FF">חזק מאוד · FF</option></select></label>
@@ -35,6 +35,47 @@ const base=n=>namePart(n).replace(/_(FF|MP|PP|Ghost|F|P)_\d*$/,'');
 const itemsPerPage=16;
 let filtered=filenames,page=0,ctx=null,src=null,activeGain=null,currently='',playRevision=0;
 const cache=new Map();
+const inFlight=new Map();
+const maxCached=36;
+const cdn='https://cdn.jsdelivr.net/gh/studiorack/salamander-drumkit@master/Samples/';
+const origin='https://raw.githubusercontent.com/studiorack/salamander-drumkit/master/Samples/';
+function saveBuffer(name,buffer){
+ if(cache.has(name))cache.delete(name);
+ cache.set(name,buffer);
+ if(cache.size>maxCached)cache.delete(cache.keys().next().value);
+ return buffer;
+}
+async function loadBuffer(name){
+ if(cache.has(name)){
+  const cached=cache.get(name);cache.delete(name);cache.set(name,cached);
+  return cached;
+ }
+ if(inFlight.has(name))return inFlight.get(name);
+ const promise=(async()=>{
+  let lastError;
+  for(const base of [cdn,origin]){
+   try{
+    const response=await fetch(base+encodeURIComponent(name));
+    if(!response.ok)throw Error('HTTP '+response.status);
+    const decoded=await ctx.decodeAudioData(await response.arrayBuffer());
+    return saveBuffer(name,decoded);
+   }catch(e){lastError=e}
+  }
+  throw lastError||Error('לא ניתן לטעון את הדגימה');
+ })();
+ inFlight.set(name,promise);
+ try{return await promise}finally{inFlight.delete(name)}
+}
+function preloadNext(name){
+ // Preload only two adjacent samples, not the entire 536-file library.
+ const index=filtered.indexOf(name);
+ if(index<0||!ctx)return;
+ const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+ if(connection&&(connection.saveData||/2g/.test(connection.effectiveType||'')))return;
+ for(const n of filtered.slice(index+1,index+3)){
+  if(!cache.has(n)&&!inFlight.has(n))void loadBuffer(n).catch(()=>{});
+ }
+}
 const setStatus=s=>{$('status').textContent=s};
 function filterList(){
  const family=$('family').value,dynamics=$('dynamics').value,q=$('search').value.trim().toLowerCase();
@@ -68,15 +109,7 @@ async function play(name){
  try{
   if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();
   await ctx.resume();
-  let buffer=cache.get(name);
-  if(!buffer){
-   const base='https://raw.githubusercontent.com/studiorack/salamander-drumkit/master/Samples/';
-   const response=await fetch(base+encodeURIComponent(name));
-   if(!response.ok)throw Error('HTTP '+response.status);
-   buffer=await ctx.decodeAudioData(await response.arrayBuffer());
-   cache.set(name,buffer);
-   if(cache.size>65)cache.delete(cache.keys().next().value);
-  }
+  const buffer=await loadBuffer(name);
   if(playRevision!==revision)return;
   src=ctx.createBufferSource();src.buffer=buffer;
   activeGain=ctx.createGain();activeGain.gain.value=Number($('volume').value)/100;
@@ -84,6 +117,7 @@ async function play(name){
   src.onended=()=>{if(playRevision===revision){currently='';src=null;render()}};
   src.start();
   setStatus('▶ '+name);
+  preloadNext(name);
  }catch(e){if(playRevision===revision){currently='';render();setStatus('שגיאת טעינה או פענוח: '+e.message+'. בדוק תמיכה ב־FLAC או נסה לפתוח בדפדפן Chrome.')}}
 }
 $('family').onchange=filterList;$('dynamics').onchange=filterList;$('search').oninput=filterList;
