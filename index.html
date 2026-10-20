@@ -858,7 +858,8 @@ const sampleSets={
   root:'https://raw.githubusercontent.com/studiorack/avl-drumkits/main/Samples/',
   files:{
    kd:['36-Pearl22Kick-2.flac','36-Pearl22Kick-4.flac','36-Pearl22Kick-5.flac'],
-   sn:['38-PearlSnare-2.flac','38-PearlSnare-4.flac','38-PearlSnare-5.flac'],
+   sn:['38-PearlSnare2-2.flac','38-PearlSnare2-4.flac','38-PearlSnare2-5.flac'],
+   snEdge:['40-PearlSnare2Edge-2.flac','40-PearlSnare2Edge-4.flac','40-PearlSnare2Edge-5.flac'],
    hh:['42-SabianRockHatClosed-2.flac','42-SabianRockHatClosed-4.flac','42-SabianRockHatClosed-5.flac'],
    hhPedal:['44-SabianRockHatPedal-2.flac','44-SabianRockHatPedal-4.flac','44-SabianRockHatPedal-5.flac'],
    hhHalf:['46-SabianRockHatSemiOpen-2.flac','46-SabianRockHatSemiOpen-4.flac','46-SabianRockHatSemiOpen-5.flac'],
@@ -916,7 +917,7 @@ function sampleHit(key,time,kit,velocity=1,registerHat=false){
  const buffer=kit==='acoustic'?buffers[Math.floor(Math.random()*buffers.length)]:kit==='avl'?buffers[Math.min(buffers.length-1,velocity<.65?0:velocity<1.15?1:2)]:buffers[0];
  src.buffer=buffer;
  const isDub=kit==='dub',isAcoustic=kit==='acoustic',isAVL=kit==='avl';
- const level=isAVL?({hh:.46,hhHalf:.42,hhOpen:.40,hhPedal:.46,sn:.83,kd:.86}[key]):isAcoustic?({hh:.34,hhHalf:.32,hhOpen:.28,hhPedal:.40,sn:.58,kd:.78}[key]):isDub?({hh:.32,sn:.52,kd:.75}[key]):({hh:.43,sn:.66,kd:.85}[key]);
+ const level=isAVL?({hh:.46,hhHalf:.42,hhOpen:.40,hhPedal:.46,sn:.83,snEdge:.72,kd:.86}[key]):isAcoustic?({hh:.34,hhHalf:.32,hhOpen:.28,hhPedal:.40,sn:.58,kd:.78}[key]):isDub?({hh:.32,sn:.52,kd:.75}[key]):({hh:.43,sn:.66,kd:.85}[key]);
  // AVL's five velocity layers are actual performance levels; leave their
  // dynamics and decay unprocessed rather than recreating the prior boomy mix.
  gain.gain.setValueAtTime(level*(isAVL?Math.min(1.2,Math.max(.6,velocity)):velocity),time);
@@ -987,7 +988,10 @@ function sound(i,t,bar=playingBar){
   }
   if(!trackMuted[1]&&patterns[1][i]){
    const velocity=snareGain(i);
-   if(!sample||!sampleHit('sn',t,kit,velocity)){if(kit!=='avl'){noise(t,.13,1100,.48*velocity);tone(t,170,.07,.15*velocity)}}
+   // Selected AVL Pearl Snare 2: ghost strokes use Pearl 2 Edge,
+   // while normal/accented hits use the centre-head recording.
+   const snKey=kit==='avl'&&snareLevelAt(i,bar)==='ghost'?'snEdge':'sn';
+   if(!sample||!sampleHit(snKey,t,kit,velocity)){if(kit!=='avl'){noise(t,.13,1100,.48*velocity);tone(t,170,.07,.15*velocity)}}
   }
   if(!trackMuted[2]&&patterns[2][i]&&(!sample||!sampleHit('kd',t,kit))&&kit!=='avl')tone(t,145,.24,.85,43);
  }
