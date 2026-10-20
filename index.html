@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 3.1</title>
+<title>Groove Lab 3.2-dev</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -39,14 +39,27 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .beat-selectors select{background:#263a48;color:#fff;border:1px solid #507084;border-radius:7px;padding:5px 2px;width:100%;font-size:12px}
 .beat-slice{display:grid;min-width:0;gap:2px}
 .beat-slice .step{min-width:0}
+.bar-panel{border:1px solid #54707d;border-radius:10px;padding:7px 4px;margin:8px 0;min-width:0}.bar-panel.is-active{border:2px solid #2bb5cc;background:#19333d}
+.bar-panel .track{margin:8px 0}.bar-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin:3px 0 7px}.repeat-label{font-size:11px;color:#acc2ce}
+
 .beat-slice{position:relative}.off-grid{position:absolute;top:100%;left:0;padding:1px 4px;background:#aa6731;border:0;border-radius:5px;font-size:10px;min-height:14px;z-index:2}
 .track:has(.off-grid){margin-bottom:24px}
 .beats{display:grid;grid-template-columns:71px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
+.score-bar-panel{border:1px solid #71818a;border-radius:9px;padding:5px;margin-bottom:10px;overflow:hidden}.score-bar-panel.is-active{border:2px solid #25b5cf}.score-bar-heading{direction:rtl;font-size:12px;font-weight:700;margin:0 3px 3px;color:#394854}
 #score{direction:ltr;overflow:hidden;background:#fff;color:#17212a;border-radius:8px;min-height:0;width:100%}#score svg{display:block;width:100%;height:auto;max-width:100%}
-.variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
+.variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variation-cell{min-width:0}.variation-cell>.variation-btn{width:100%;min-height:53px;padding:7px 2px;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.variation-cell .variation-marker{display:block;font-size:11px;line-height:13px;font-weight:700;opacity:.9;margin-top:3px}
+#lengthEditor{position:fixed;inset:0;background:#000a;z-index:25;display:flex;justify-content:center;align-items:center;padding:16px}
+#lengthEditor[hidden]{display:none}
+#lengthEditor .editor-content{background:#20323e;border:1px solid #628096;border-radius:14px;width:min(330px,100%);padding:16px;display:grid;gap:10px}
+#lengthEditor .choice{width:100%;text-align:right}.choice.is-selected{background:#087d9a;border-color:#44c5d9}
+.bar-panel{border:1px solid #54707d;border-radius:10px;padding:7px 5px;margin:8px 0;min-width:0}.bar-panel.is-active{border:2px solid #2bb5cc;background:#19333d}.bar-panel .track{margin:10px 0}
+.bar-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin:3px 0 7px}
+.bar-head .repeat-label{font-size:11px;color:#acc2ce}.bar-panel .beat-controls{margin-top:4px}
+.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">3.1</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">3.2-dev</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
@@ -68,10 +81,19 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 <details class="fold" id="variationsFold" open>
 <summary>וריאציות לפי כלי</summary>
 <div class="fold-body">
- <div class="small">A–H לכל כלי · מעבר בתחילת התיבה הבאה</div>
+ <div class="small">A–H לכל כלי · לחיצה רגילה לבחירה, ארוכה לשינוי אורך · Ⅰ תיבה אחת / Ⅱ שתי תיבות</div>
  <div class="variations" id="variations" dir="ltr"></div>
  <div class="line"><span class="small" id="variationStatus">HH A · SN A · KD A</span><div style="display:flex;gap:6px;flex-wrap:wrap"><button id="randomize" title="בחירת שילוב אקראי של היי־האט, סנר ובס">🎲 רנדומייז</button><button id="copyVar" title="העתקת וריאציית כלי ליעד אחר באותו כלי">העתק כלי…</button></div></div>
 </div></details>
+<div id="lengthEditor" hidden role="dialog" aria-modal="true" aria-labelledby="lengthEditorTitle">
+ <div class="editor-content">
+  <strong id="lengthEditorTitle">אורך וריאציה</strong>
+  <span class="small">בחר את אורך הווריאציה. שינוי זה לא מוחק את התיבה השנייה.</span>
+  <button class="choice" data-var-length="1">Ⅰ · תיבה אחת</button>
+  <button class="choice" data-var-length="2">Ⅱ · שתי תיבות</button>
+  <button id="lengthEditorClose">סגור</button>
+ </div>
+</div>
 <details class="fold" id="practiceFold" open><summary>🥁 תרגול — סיקוונסר / תווים</summary><div class="fold-body">
 <div class="line" style="margin:0 0 12px 0"><span class="small">סאונד התופים</span><label class="small" style="display:flex;align-items:center;gap:7px"><input type="checkbox" id="drumsEnabled" checked> 🔊 הפעל תופים</label></div>
 <div class="tabs"><button class="active" data-view="seq">סיקוונסר</button><button data-view="score">תווים</button></div>
@@ -132,6 +154,10 @@ const mixedBeatKey='groove-lab-mixed-beats-v1';
 let mixedBeats=[4,3,4,6];
 try{const saved=JSON.parse(localStorage.getItem(mixedBeatKey));if(Array.isArray(saved)&&saved.length===4&&saved.every(n=>[3,4,6].includes(n)))mixedBeats=saved}catch(e){}
 const stepCount=()=>rhythmGrid==='mixed'?48:rhythmGrid==='triplet16'?24:rhythmGrid==='triplet'?12:16;
+const secondBeatKey='groove-lab-second-bar-subdivisions-v1';
+let secondMixedBeats=mixedBeats.slice();
+try{const x=JSON.parse(localStorage.getItem(secondBeatKey));if(Array.isArray(x)&&x.length===4&&x.every(n=>[3,4,6].includes(n)))secondMixedBeats=x}catch(e){}
+const beatDivisionsForBar=bar=>rhythmGrid==='mixed'?(bar===1?secondMixedBeats:mixedBeats):Array(4).fill(subdivisions());
 const beatStarts=()=>[0,12,24,36];
 function getStepBeat(i){return rhythmGrid==='mixed'?Math.floor(i/12):Math.floor(i/subdivisions())};
 const subdivisions=()=>rhythmGrid==='triplet16'?6:rhythmGrid==='triplet'?3:4;
@@ -194,19 +220,64 @@ if(rhythmGrid==='triplet')instrumentBanks=tripletBanks;
 if(rhythmGrid==='triplet16')instrumentBanks=triplet16Banks;
 if(rhythmGrid==='mixed')instrumentBanks=mixedBanks;
 let selected=[0,0,0],pending=[null,null,null];
+const lengthKey='groove-lab-variation-lengths-v1';
+let variationLengths=Array.from({length:3},()=>Array(8).fill(1));
+try{const data=JSON.parse(localStorage.getItem(lengthKey));if(Array.isArray(data)&&data.length===3&&data.every(a=>Array.isArray(a)&&a.length===8))variationLengths=data.map(a=>a.map(n=>n===2?2:1))}catch(e){}
+const variationLength=(r,i=selected[r])=>variationLengths[r][i];
+const cycleBars=()=>selected.some((v,r)=>variationLength(r,v)===2)?2:1;
+function saveLengths(){try{localStorage.setItem(lengthKey,JSON.stringify(variationLengths))}catch(e){}}
+function toggleVariationLength(r,i){
+ variationLengths[r][i]=variationLengths[r][i]===2?1:2;saveLengths();
+ if(variationLengths[r][i]===2)ensureSecond(r,i);
+ if(!running){paintVariations();seq();score()}
+ else{paintVariations();$('status').textContent='אורך הווריאציה עודכן; המחזור הבא ישתמש באורך החדש';seq();score()}
+}
+
 let patterns=instrumentBanks.map((bank,r)=>bank[selected[r]]);
 function saveVariations(){try{if(rhythmGrid==='mixed')localStorage.setItem(mixedKey,JSON.stringify({banks:mixedBanks}));else localStorage.setItem(rhythmGrid==='triplet16'?triplet16Key:rhythmGrid==='triplet'?tripletKey:storageKey,JSON.stringify(instrumentBanks))}catch(e){}}
 function refreshPatterns(){patterns=instrumentBanks.map((bank,r)=>bank[selected[r]])}
+let editingVariation=null;
+function closeLengthEditor(){editingVariation=null;$('lengthEditor').hidden=true}
+function openLengthEditor(r,i){
+ editingVariation={r,i};
+ $('lengthEditorTitle').textContent='אורך וריאציה '+names[r]+' '+ 'ABCDEFGH'[i];
+ $('lengthEditor').querySelectorAll('[data-var-length]').forEach(b=>b.classList.toggle('is-selected',Number(b.dataset.varLength)===variationLength(r,i)));
+ $('lengthEditor').hidden=false;
+}
+function setEditedLength(n){
+ if(!editingVariation||![1,2].includes(n))return;
+ const {r,i}=editingVariation;
+ if(variationLength(r,i)!==n)toggleVariationLength(r,i);
+ closeLengthEditor();paintVariations();
+}
 function paintVariations(){
  const host=$('variations');host.replaceChildren();
  ['HH','SN','KD'].forEach((name,r)=>{
   const line=document.createElement('div');line.className='variation-row';
   const label=document.createElement('span');label.textContent=name;line.append(label);
   for(let i=0;i<8;i++){
-   const btn=document.createElement('button');btn.textContent='ABCDEFGH'[i];const detail=document.createElement('span');detail.className='vlabel';detail.textContent=instrumentLabels[r][i];btn.append(detail);
-   btn.className=(i===selected[r]?'active ':'')+(i===pending[r]?'pending':'');
-   btn.setAttribute('aria-label',name+' וריאציה '+'ABCDEFGH'[i]);
-   btn.onclick=()=>selectVariation(r,i);line.append(btn);
+   const cell=document.createElement('div');cell.className='variation-cell';
+   const btn=document.createElement('button');btn.className='variation-btn';
+   btn.textContent='ABCDEFGH'[i];
+   const detail=document.createElement('span');detail.className='vlabel';detail.textContent=instrumentLabels[r][i];btn.append(detail);
+   const marker=document.createElement('span');marker.className='variation-marker';
+   marker.textContent=variationLength(r,i)===2?'Ⅱ':'Ⅰ';btn.append(marker);
+   btn.className='variation-btn '+(i===selected[r]?'active ':'')+(i===pending[r]?'pending':'');
+   btn.title=name+' '+ 'ABCDEFGH'[i]+' · '+variationLength(r,i)+' תיבות · לחיצה ארוכה לשינוי אורך';
+   btn.setAttribute('aria-label',name+' וריאציה '+'ABCDEFGH'[i]+' · '+(variationLength(r,i)===2?'שתי תיבות':'תיבה אחת')+' · לחיצה ארוכה לעריכה');
+   let longTimer=null,suppressClick=false;
+   const cancelLong=()=>{if(longTimer!==null){clearTimeout(longTimer);longTimer=null}};
+   btn.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;
+    suppressClick=false;cancelLong();
+    longTimer=setTimeout(()=>{longTimer=null;suppressClick=true;openLengthEditor(r,i)},520);
+   });
+   btn.addEventListener('pointerup',cancelLong);
+   btn.addEventListener('pointercancel',cancelLong);
+   btn.addEventListener('pointerleave',cancelLong);
+   btn.addEventListener('contextmenu',e=>{e.preventDefault();cancelLong();suppressClick=true;openLengthEditor(r,i)});
+   btn.onclick=()=>{if(suppressClick){suppressClick=false;return}selectVariation(r,i)};
+   cell.append(btn);line.append(cell);
   }
   host.append(line);
  });
@@ -272,14 +343,15 @@ function saveSnareDynamics(){try{if(rhythmGrid==='mixed')localStorage.setItem(mi
 function snareLevel(step){return snareDynamics[selected[1]][step]}
 function snareGain(step){return ({ghost:.24,normal:1,accent:1.38})[snareLevel(step)]||1}
 let editedSnareStep=null;
-function openSnareEditor(step){editedSnareStep=step;$('snareEditorTitle').textContent='סנר · צעד '+(step+1);$('snareEditor').hidden=false}
+let editedSnareBar=0;
+function openSnareEditor(step,bar=0){editedSnareStep=step;editedSnareBar=bar;$('snareEditorTitle').textContent='סנר · תיבה '+(bar+1)+' · צעד '+(step+1);$('snareEditor').hidden=false}
 function closeSnareEditor(){editedSnareStep=null;$('snareEditor').hidden=true}
 function assignSnareLevel(level){
  if(editedSnareStep===null)return;
  const step=editedSnareStep;
- if(level==='off')patterns[1][step]=false;
- else{patterns[1][step]=true;snareDynamics[selected[1]][step]=level}
- saveVariations();saveSnareDynamics();closeSnareEditor();seq();score();
+ if(level==='off')patternFor(1,editedSnareBar)[step]=false;
+ else{patternFor(1,editedSnareBar)[step]=true;snareRowAt(editedSnareBar)[step]=level}
+ saveVariations();saveSnareDynamics();saveSecond();closeSnareEditor();seq();score();
 }
 const hatKey='groove-lab-hihat-articulations-v1';
 const defaultHatStep=()=>({type:'closed',level:'normal'});
@@ -305,23 +377,82 @@ function saveHats(){try{if(rhythmGrid==='mixed')localStorage.setItem(mixedHatKey
 const currentHat=step=>hatBanks[selected[0]][step];
 const hatVelocity=step=>({soft:.38,normal:1,accent:1.35})[currentHat(step).level]||1;
 let editedHatStep=null;
+let editedHatBar=0;
 function paintHatEditor(){if(editedHatStep===null)return;
- const hit=currentHat(editedHatStep);
+ const hit=hatAt(editedHatStep,editedHatBar);
  $('hatEditor').querySelectorAll('[data-hat-type]').forEach(b=>b.classList.toggle('chosen',b.dataset.hatType===hit.type));
  $('hatEditor').querySelectorAll('[data-hat-level]').forEach(b=>b.classList.toggle('chosen',b.dataset.hatLevel===hit.level));
 }
-function openHatEditor(step){editedHatStep=step;$('hatEditorTitle').textContent='היי־האט · צעד '+(step+1);paintHatEditor();$('hatEditor').hidden=false}
+function openHatEditor(step,bar=0){editedHatStep=step;editedHatBar=bar;$('hatEditorTitle').textContent='היי־האט · תיבה '+(bar+1)+' · צעד '+(step+1);paintHatEditor();$('hatEditor').hidden=false}
 function closeHatEditor(){editedHatStep=null;$('hatEditor').hidden=true}
 function changeHat(kind,value){
  if(editedHatStep===null)return;
  const step=editedHatStep;
- currentHat(step)[kind]=value;patterns[0][step]=true;
- saveHats();saveVariations();paintHatEditor();seq();score();
+ hatAt(step,editedHatBar)[kind]=value;patternFor(0,editedHatBar)[step]=true;
+ saveHats();saveVariations();saveSecond();paintHatEditor();seq();score();
+}
+const secondBarKey='groove-lab-second-bar-data-v1';
+const secondBarData={};
+function newSecondForGrid(mode){
+ const size=mode==='mixed'?48:mode==='triplet16'?24:mode==='triplet'?12:16;
+ return {patterns:Array.from({length:3},()=>Array.from({length:8},()=>Array(size).fill(false))),
+  snare:Array.from({length:8},()=>Array(size).fill('normal')),
+  hats:Array.from({length:8},()=>Array.from({length:size},defaultHatStep)),initialized:Array.from({length:3},()=>Array(8).fill(false))};
+}
+try{const saved=JSON.parse(localStorage.getItem(secondBarKey));
+ if(saved&&typeof saved==='object')for(const mode of ['straight','triplet','triplet16','mixed']){
+  const d=saved[mode],size=mode==='mixed'?48:mode==='triplet16'?24:mode==='triplet'?12:16;
+  if(d?.patterns?.length===3&&d.patterns.every(bank=>bank.length===8&&bank.every(row=>row.length===size))&&d?.snare?.length===8&&d.snare.every(row=>row.length===size)&&d?.hats?.length===8&&d.hats.every(row=>row.length===size)&&d?.initialized?.length===3)secondBarData[mode]=d;
+ }}catch(e){}
+function secondData(){return secondBarData[rhythmGrid]??(secondBarData[rhythmGrid]=newSecondForGrid(rhythmGrid))}
+function saveSecond(){try{localStorage.setItem(secondBarKey,JSON.stringify(secondBarData))}catch(e){}}
+function ensureSecond(r,i){
+ const d=secondData();if(d.initialized[r][i])return;
+ d.patterns[r][i]=instrumentBanks[r][i].slice();
+ if(r===1)d.snare[i]=snareDynamics[i].slice();
+ if(r===0)d.hats[i]=hatBanks[i].map(x=>({...x}));
+ d.initialized[r][i]=true;saveSecond();
+}
+function patternFor(r,bar=0,i=selected[r]){
+ if(bar===0||variationLength(r,i)===1)return instrumentBanks[r][i];
+ ensureSecond(r,i);return secondData().patterns[r][i];
+}
+function barPatterns(bar=0){return [0,1,2].map(r=>patternFor(r,bar))}
+function snareLevelAt(step,bar=0){return bar===1&&variationLength(1)===2?(ensureSecond(1,selected[1]),secondData().snare[selected[1]][step]):snareDynamics[selected[1]][step]}
+function hatAt(step,bar=0){return bar===1&&variationLength(0)===2?(ensureSecond(0,selected[0]),secondData().hats[selected[0]][step]):hatBanks[selected[0]][step]}
+function snareRowAt(bar=0){return bar===1&&variationLength(1)===2?(ensureSecond(1,selected[1]),secondData().snare[selected[1]]):snareDynamics[selected[1]]}
+function hatRowAt(bar=0){return bar===1&&variationLength(0)===2?(ensureSecond(0,selected[0]),secondData().hats[selected[0]]):hatBanks[selected[0]]}
+let playingBar=0,shownBar=0;
+let scoreBarContext=0,scoreHost=null,scorePositionsByBar=[],scoreCursorsByBar=[];
+function score(){
+ const root=$('score');root.replaceChildren();scorePositionsByBar=[];scoreCursorsByBar=[];
+ for(let bar=0,total=cycleBars();bar<total;bar++){
+  scoreBarContext=bar;
+  const panel=document.createElement('div');panel.className=total===2?'score-bar-panel':'score-single';panel.dataset.bar=String(bar);
+  if(total===2){const title=document.createElement('div');title.className='score-bar-heading';title.textContent='תיבה '+(bar+1);panel.append(title)}
+  const drawing=document.createElement('div');panel.append(drawing);root.append(panel);scoreHost=drawing;
+  renderScoreBar();scorePositionsByBar[bar]=scorePositions.slice();scoreCursorsByBar[bar]=scoreCursor;
+ }
+ markScore(shownStep,shownBar);
 }
 let ctx,bus,running=false,timer=null,position=0,next=0,rev=0,shownStep=-1,scorePositions=[],scoreCursor=null;
 function seq(){
  const host=$('seq');host.replaceChildren();
- patterns.forEach((a,r)=>{
+ const total=cycleBars();$('beatControls').hidden=total===2;
+ for(let bar=0;bar<total;bar++){
+  const panel=document.createElement('div');panel.className=total===2?'bar-panel'+(bar===shownBar?' is-active':''):'single-bar';
+  panel.dataset.bar=String(bar);
+  if(total===2){
+   const heading=document.createElement('div');heading.className='bar-head';
+   const title=document.createElement('strong');title.textContent='תיבה '+(bar+1);
+   const repeat=document.createElement('span');repeat.className='repeat-label';
+   repeat.textContent=bar===1?'↻ כלי בן תיבה אחת חוזר':'';
+   heading.append(title,repeat);panel.append(heading);
+   const controls=document.createElement('div');controls.className='beat-controls';
+   const placeholder=document.createElement('span'),selectors=document.createElement('div');selectors.className='beat-selectors';
+   controls.append(placeholder,selectors);panel.append(controls);buildBeatSelectors(selectors,bar);
+  }
+  barPatterns(bar).forEach((a,r)=>{
   const row=document.createElement('div');row.className='track'+(trackMuted[r]?' is-muted':'');
   row.style.gridTemplateColumns='34px 34px repeat(4,minmax(0,1fr))';
   row.classList.toggle('dense',rhythmGrid==='triplet16'||rhythmGrid==='mixed');
@@ -333,15 +464,15 @@ function seq(){
   mute.setAttribute('aria-pressed',String(trackMuted[r]));
   mute.onclick=()=>setTrackMute(r);
   row.append(mute);
-  const counts=rhythmGrid==='mixed'?mixedBeats:Array(4).fill(subdivisions());
+  const counts=beatDivisionsForBar(bar);
   for(let beat=0;beat<4;beat++){
    const group=document.createElement('div');group.className='beat-slice';
    group.style.gridTemplateColumns='repeat('+counts[beat]+',minmax(0,1fr))';row.append(group);
    const visible=rhythmGrid==='mixed'?offsets(counts[beat]).map(t=>beat*12+t):Array.from({length:counts[beat]},(_,j)=>beat*counts[beat]+j);
    visible.forEach(i=>{const hit=a[i];
-   const b=document.createElement('button');b.dataset.step=String(i);
-   const level=r===1&&hit?snareLevel(i):'normal';
-   const hat=r===0&&hit?currentHat(i):null;
+   const b=document.createElement('button');b.dataset.step=String(i);b.dataset.bar=String(bar);
+   const level=r===1&&hit?snareLevelAt(i,bar):'normal';
+   const hat=r===0&&hit?hatAt(i,bar):null;
    b.className='step'+(hit?' hit':'')+(i===shownStep?' current':'')+(r===1&&hit?' '+level:'');
    if(r===1&&hit&&level!=='normal')b.textContent=level==='ghost'?'g':'>';
    if(hat){
@@ -352,7 +483,7 @@ function seq(){
    b.setAttribute('aria-label',names[r]+' step '+(i+1));
    if(r===1||r===0){
     let longTimer=null,suppressClick=false;
-    const openEditor=()=>r===0?openHatEditor(i):openSnareEditor(i);
+    const openEditor=()=>r===0?openHatEditor(i,bar):openSnareEditor(i,bar);
     b.addEventListener('pointerdown',e=>{
      if(e.button!==0)return;
      suppressClick=false;
@@ -363,8 +494,8 @@ function seq(){
     b.addEventListener('pointercancel',cancelLong);
     b.addEventListener('pointerleave',cancelLong);
     b.addEventListener('contextmenu',e=>{e.preventDefault();cancelLong();suppressClick=true;openEditor()});
-    b.onclick=()=>{if(suppressClick){suppressClick=false;return}a[i]=!a[i];saveVariations();seq();score()};
-   }else b.onclick=()=>{a[i]=!a[i];saveVariations();seq();score()};
+    b.onclick=()=>{if(suppressClick){suppressClick=false;return}a[i]=!a[i];saveVariations();saveSecond();seq();score()};
+   }else b.onclick=()=>{a[i]=!a[i];saveVariations();saveSecond();seq();score()};
     group.append(b);
    });
    if(rhythmGrid==='mixed'){
@@ -374,25 +505,30 @@ function seq(){
      note.onclick=()=>alert(names[r]+' · פעמה '+(beat+1)+'\nמכות מחוץ לרשת ב־'+hidden.map(i=>(i%12+1)+'/12').join(', ')+'\nהחלוקה אינה משנה אותן.');group.append(note)}
    }
   }
-  host.append(row);
+  panel.append(row);
  });
- const header=$('beatSelectors');header.replaceChildren();
- const currentDivisions=rhythmGrid==='mixed'?mixedBeats:Array(4).fill(subdivisions());
+ host.append(panel);
+ }
+ if(total===1)buildBeatSelectors($('beatSelectors'),0);
+}
+function buildBeatSelectors(header,bar){
+ header.replaceChildren();
+ const currentDivisions=beatDivisionsForBar(bar);
  currentDivisions.forEach((n,i)=>{
-  const label=document.createElement('label');
-  label.textContent='פעמה '+(i+1);
+  const label=document.createElement('label');label.textContent='פעמה '+(i+1);
   const select=document.createElement('select');
   [4,3,6].forEach(v=>{const option=document.createElement('option');option.value=String(v);option.textContent=v===4?'4 · רגיל':v===3?'3 · טריולה':'6 · טריולה';select.append(option)});
-  select.value=String(queuedBeatDivisions[i]??n);
-  if(queuedBeatDivisions[i]!==undefined){select.style.borderColor='#efc14b';select.title='ממתין לתיבה הבאה'}
-  select.setAttribute('aria-label','חלוקה לפעמה '+(i+1));
-  select.onchange=()=>changeBeatDivision(i,Number(select.value));
+  select.value=String(queuedBeatDivisions[bar+':'+i]??n);
+  select.setAttribute('aria-label','תיבה '+(bar+1)+' חלוקה לפעמה '+(i+1));
+  if(queuedBeatDivisions[bar+':'+i]!==undefined)select.style.borderColor='#efc14b';
+  select.onchange=()=>changeBeatDivision(i,Number(select.value),bar);
   label.append(select);header.append(label);
  });
-
 }
 function mixedScore(){
- const host=$('score');host.replaceChildren();
+ const patterns=barPatterns(scoreBarContext),snareLevel=step=>snareLevelAt(step,scoreBarContext),currentHat=step=>hatAt(step,scoreBarContext);
+ const mixedBeats=beatDivisionsForBar(scoreBarContext);
+ const host=scoreHost;host.replaceChildren();
  const VF=window.Vex?.Flow;
  if(!VF){$('scoreMsg').textContent='ספריית התווים אינה זמינה';return}
  try{
@@ -498,15 +634,17 @@ function mixedScore(){
    scoreCursor.setAttribute('y1','18');scoreCursor.setAttribute('y2','139');
    scoreCursor.setAttribute('stroke','#e65142');scoreCursor.setAttribute('stroke-width','2.5');
    scoreCursor.setAttribute('opacity','0');scoreCursor.setAttribute('pointer-events','none');svg.append(scoreCursor);
-   markScore(shownStep);
+   
   }
   $('scoreMsg').textContent=detailed
    ?'תיווי ריתמי מלא: בפעימות עם מכות מחוץ לרשת מוצגת חלוקת 12 לשמירת התזמון (מסומנות ב־*).'
    :'תיווי ריתמי: טריולות של שמיניות ושש־עשריות עם סימון 3.';
  }catch(e){console.error('Mixed notation:',e);$('scoreMsg').textContent='שגיאה בתיווי: '+e.message}
 }
-function score(){
- const host=$('score');host.replaceChildren();
+function renderScoreBar(){
+ const patterns=barPatterns(scoreBarContext),snareLevel=step=>snareLevelAt(step,scoreBarContext),currentHat=step=>hatAt(step,scoreBarContext);
+ const mixedBeats=beatDivisionsForBar(scoreBarContext);
+ const host=scoreHost;host.replaceChildren();
  if(rhythmGrid==='mixed'){mixedScore();return}
  const VF=window.Vex?.Flow;
  if(!VF){$('scoreMsg').textContent='ספריית התווים אינה זמינה. בדוק חיבור לאינטרנט.';return}
@@ -702,7 +840,7 @@ function score(){
     mark.textContent=level==='ghost'?'g':'>';
     svg.appendChild(mark);
    });
-   markScore(shownStep);
+   
   }
   $('scoreMsg').textContent='תיווי בסנכרון עם הנגן · הפסקות מדויקות גם בפעמה 4';
  }catch(e){$('scoreMsg').textContent='שגיאה בתיווי: '+e.message}
@@ -779,8 +917,11 @@ function sampleHit(key,time,kit,velocity=1,registerHat=false){
 }
 let activeOpenHats=[];
 function chokeHats(time){
+ // WebAudio events are scheduled ahead: close only voices that began before
+ // this instant, and fade their existing sample/synth gains at the exact time.
  activeOpenHats=activeOpenHats.filter(h=>{
-  if(h.time>time)return true;
+  if(h.time>=time)return true;
+  h.gain.cancelScheduledValues(time);
   h.gain.setTargetAtTime(.0001,time,.009);
   return false;
  });
@@ -806,14 +947,18 @@ function metronomeClick(t,accent,volume){
  osc.connect(gain);gain.connect(bus);
  osc.start(t);osc.stop(t+.06);
 }
-function sound(i,t){
+function sound(i,t,bar=playingBar){
+ const patterns=barPatterns(bar),currentHat=step=>hatAt(step,bar);
+ const snareGain=step=>({ghost:.24,normal:1,accent:1.38})[snareLevelAt(step,bar)]||1;
+ const hatVelocity=step=>({soft:.38,normal:1,accent:1.35})[hatAt(step,bar).level]||1;
  if($('drumsEnabled').checked){
   const kit=$('soundKit').value;
   const sample=kit!=='synth';
   if(!trackMuted[0]&&patterns[0][i]){
    const hh=currentHat(i),open=hh.type==='open'||hh.type==='half',velocity=hatVelocity(i);
-   // Closed stick and pedal shut an earlier ringing open-hat.
-   if(!open)chokeHats(t);
+   // A new stick/pedal articulation replaces the previous ringing open hat.
+   // This also avoids stacking two open samples when a phrase repeats.
+   chokeHats(t);
    const key=kit==='acoustic'?({closed:'hh',half:'hhHalf',open:'hhOpen',pedal:'hhPedal'})[hh.type]:'hh';
    const played=sample&&sampleHit(key,t,kit,velocity,open);
    if(!played)syntheticHat(t,hh.type,velocity);
@@ -827,24 +972,60 @@ function sound(i,t){
  if($('metro').checked){
   const div=Number($('clickDivision').value);
   const clickEvery=rhythmGrid==='mixed'?1:rhythmGrid==='triplet16'?(div===4?6:div===2?3:1):rhythmGrid==='triplet'?(div===4?3:1):div;
-  if(rhythmGrid==='mixed'?(div===4?i%12===0:div===2?i%6===0:offsets(mixedBeats[getStepBeat(i)]).includes(i%12)):i%clickEvery===0){
+  if(rhythmGrid==='mixed'?(div===4?i%12===0:div===2?i%6===0:offsets(beatDivisionsForBar(bar)[getStepBeat(i)]).includes(i%12)):i%clickEvery===0){
    const accent=$('clickAccent').checked&&i===0;
    const volume=Number($('clickVolume').value)/100;
    metronomeClick(t,accent,volume);
   }
  }
 }
-function markScore(s){if(!scoreCursor)return;if(s<0||!Number.isFinite(scorePositions[s])){scoreCursor.setAttribute('opacity','0');return}const x=scorePositions[s];scoreCursor.setAttribute('x1',x);scoreCursor.setAttribute('x2',x);scoreCursor.setAttribute('opacity','0.85')}
-function mark(s){shownStep=s;$('seq').querySelectorAll('.track').forEach(row=>row.querySelectorAll('.step').forEach(b=>b.classList.toggle('current',Number(b.dataset.step)===s)));markScore(s)}
-function stop(){running=false;applyQueuedBeatDivisions();activeOpenHats=[];pending=[null,null,null];paintVariations();rev++;clearInterval(timer);timer=null;position=0;mark(-1);$('play').textContent='▶ נגן';$('status').textContent='מוכן';if(ctx){bus.gain.setTargetAtTime(0,ctx.currentTime,.008);bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}}
-function tick(){if(!running)return;const n=rev;while(next<ctx.currentTime+.09&&running){const i=position,t=next;
-  if(i===0){applyQueuedBeatDivisions();applyPendingVariations();}
-  sound(i,t);setTimeout(()=>{if(running&&rev===n){mark(i);$('status').textContent='פעמה '+(getStepBeat(i)+1)}},Math.max(0,(t-ctx.currentTime)*1000));const quarter=60/Number($('bpm').value);
- const ratio=Number($('swing').value)/100;
- // Eighth swing: two eighths per beat split by ratio, with the two sixteenths within each half evenly spaced.
- next+=rhythmGrid==='mixed'?quarter/12:rhythmGrid==='triplet16'?quarter/6:rhythmGrid==='triplet'?quarter/3:quarter*((i%4)<2?ratio/2:(1-ratio)/2);
- position++;if(position===stepCount()){position=0;if(!$('loop').checked){clearInterval(timer);timer=null;setTimeout(()=>{if(rev===n)stop()},Math.max(0,(next-ctx.currentTime)*1000));break}}}}
-$('play').onclick=()=>{if(running){stop();return}if(!init())return;running=true;rev++;position=0;next=ctx.currentTime+.05;$('play').textContent='Ⅱ השהה';tick();timer=setInterval(tick,20)};
+function markScore(s,bar=shownBar){
+ scoreCursorsByBar.forEach((cursor,b)=>{
+  if(!cursor)return;
+  if(b!==bar||s<0||!Number.isFinite(scorePositionsByBar[b]?.[s])){cursor.setAttribute('opacity','0');return}
+  const x=scorePositionsByBar[b][s];cursor.setAttribute('x1',x);cursor.setAttribute('x2',x);cursor.setAttribute('opacity','0.85');
+ });
+ $('score').querySelectorAll('.score-bar-panel').forEach(node=>node.classList.toggle('is-active',Number(node.dataset.bar)===bar));
+}
+function mark(s,bar=shownBar){
+ shownStep=s;shownBar=bar;
+ $('seq').querySelectorAll('.step').forEach(b=>b.classList.toggle('current',s>=0&&Number(b.dataset.step)===s&&Number(b.dataset.bar)===bar));
+ $('seq').querySelectorAll('.bar-panel').forEach(node=>node.classList.toggle('is-active',Number(node.dataset.bar)===bar));
+ markScore(s,bar);
+}
+function stop(){running=false;applyQueuedBeatDivisions();playingBar=0;shownBar=0;activeOpenHats=[];pending=[null,null,null];paintVariations();rev++;clearInterval(timer);timer=null;position=0;mark(-1);$('play').textContent='▶ נגן';$('status').textContent='מוכן';if(ctx){bus.gain.setTargetAtTime(0,ctx.currentTime,.008);bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}}
+function tick(){
+ if(!running)return;
+ const revision=rev;
+ while(next<ctx.currentTime+.09&&running){
+  const i=position,t=next;
+  // Keep a single continuous 1- or 2-bar cycle, without restarting AudioContext.
+  if(i===0&&playingBar===0){applyQueuedBeatDivisions();applyPendingVariations();}
+  const bar=playingBar;
+  // At the end of a full two-bar phrase, close the previous open hat even if
+  // the new phrase begins with silence (so no new closed HH would choke it).
+  if(cycleBars()===2&&bar===0&&i===0)chokeHats(t);
+  sound(i,t,bar);
+  setTimeout(()=>{if(running&&rev===revision){
+   mark(i,bar);$('status').textContent='תיבה '+(bar+1)+' · פעמה '+(getStepBeat(i)+1)
+  }},Math.max(0,(t-ctx.currentTime)*1000));
+  const quarter=60/Number($('bpm').value),ratio=Number($('swing').value)/100;
+  next+=rhythmGrid==='mixed'?quarter/12:rhythmGrid==='triplet16'?quarter/6:rhythmGrid==='triplet'?quarter/3:quarter*((i%4)<2?ratio/2:(1-ratio)/2);
+  position++;
+  if(position===stepCount()){
+   position=0;playingBar++;
+   if(playingBar>=cycleBars()){
+    playingBar=0;
+    if(!$('loop').checked){
+     clearInterval(timer);timer=null;
+     setTimeout(()=>{if(rev===revision)stop()},Math.max(0,(next-ctx.currentTime)*1000));
+     break;
+    }
+   }
+  }
+ }
+}
+$('play').onclick=()=>{if(running){stop();return}if(!init())return;running=true;rev++;position=0;playingBar=0;shownBar=0;next=ctx.currentTime+.05;$('play').textContent='Ⅱ השהה';tick();timer=setInterval(tick,20)};
 $('stop').onclick=stop;
 $('bpm').oninput=()=>{$('bpmOut').textContent=$('bpm').value};
 $('soundKit').onchange=()=>{
@@ -874,26 +1055,31 @@ function applyQueuedBeatDivisions(){
  const changes=Object.entries(queuedBeatDivisions);
  if(!changes.length)return;
  queuedBeatDivisions={};
- changes.forEach(([beat,division])=>applyBeatDivision(Number(beat),division));
+ changes.forEach(([key,division])=>{
+  const [bar,beat]=key.split(':').map(Number);
+  applyBeatDivision(beat,division,bar);
+ });
 }
-function changeBeatDivision(beat,division){
+function changeBeatDivision(beat,division,bar=0){
  if(![3,4,6].includes(division)||beat<0||beat>3)return;
  if(running){
-  queuedBeatDivisions[beat]=division;
+  queuedBeatDivisions[bar+':'+beat]=division;
   $('status').textContent='שינוי החלוקה ייכנס בתחילת התיבה הבאה';
   seq();
   return;
  }
- applyBeatDivision(beat,division);
+ applyBeatDivision(beat,division,bar);
 }
-function applyBeatDivision(beat,division){
+function applyBeatDivision(beat,division,bar=0){
  if(![3,4,6].includes(division)||beat<0||beat>3)return;
- if(rhythmGrid==='mixed'&&mixedBeats[beat]===division)return;
+ if(rhythmGrid==='mixed'&&beatDivisionsForBar(bar)[beat]===division)return;
  if(rhythmGrid!=='mixed'){
   // Preserve every other beat exactly as it appears in the current uniform grid.
   // Transfer ALL instrument variations, snare dynamics and hat articulations
   // into absolute 48-tick positions before changing the requested beat.
   const formerDivision=subdivisions();
+  const oldMode=rhythmGrid;
+  const oldSecond=secondData();
   const sourceBanks=instrumentBanks,sourceSnare=snareDynamics,sourceHats=hatBanks;
   const ticksForSource=Array.from({length:4},(_,b)=>offsets(formerDivision).map(t=>b*12+t)).flat();
   const expand=row=>Array.from({length:48},(_,tick)=>{
@@ -920,13 +1106,32 @@ function applyBeatDivision(beat,division){
   mixedBanks=sourceBanks.map(bank=>bank.map(expand));
   mixedSnareDynamics=sourceSnare.map(expandLevel);
   mixedHatBanks=sourceHats.map(expandHat);
+  // Transfer second-bar edits as well, retaining independent per-variation lengths.
+  const convertedSecond=newSecondForGrid('mixed');
+  for(let r=0;r<3;r++)for(let i=0;i<8;i++)if(oldSecond.initialized[r][i]){
+   convertedSecond.patterns[r][i]=expand(oldSecond.patterns[r][i]);
+   convertedSecond.initialized[r][i]=true;
+   if(r===1)convertedSecond.snare[i]=expandLevel(oldSecond.snare[i]);
+   if(r===0)convertedSecond.hats[i]=oldSecond.hats[i].length?Array.from({length:48},(_,tick)=>{
+    const sourceIndex=ticksForSource.indexOf(tick);
+    return sourceIndex>=0?{...(oldSecond.hats[i][sourceIndex]||defaultHatStep())}:defaultHatStep();
+   }):Array.from({length:48},defaultHatStep);
+  }
+  secondBarData.mixed=convertedSecond;saveSecond();
   mixedBeats=Array(4).fill(formerDivision);
+  secondMixedBeats=Array(4).fill(formerDivision);
+  try{localStorage.setItem(secondBeatKey,JSON.stringify(secondMixedBeats))}catch(e){} 
   rhythmGrid='mixed';$('rhythmGrid').value='mixed';
   instrumentBanks=mixedBanks;snareDynamics=mixedSnareDynamics;hatBanks=mixedHatBanks;
   try{localStorage.setItem(gridKey,'mixed')}catch(e){}
  }
- mixedBeats[beat]=division;
- try{localStorage.setItem(mixedBeatKey,JSON.stringify(mixedBeats))}catch(e){}
+ if(bar===1){
+  secondMixedBeats[beat]=division;
+  try{localStorage.setItem(secondBeatKey,JSON.stringify(secondMixedBeats))}catch(e){}
+ }else{
+  mixedBeats[beat]=division;
+  try{localStorage.setItem(mixedBeatKey,JSON.stringify(mixedBeats))}catch(e){}
+ }
  saveVariations();saveSnareDynamics();saveHats();
  refreshPatterns();syncRhythmSettings();seq();score();
 }
@@ -949,6 +1154,8 @@ document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{document.quer
 $('reset').onclick=()=>{
  for(let r=0;r<3;r++)instrumentBanks[r][selected[r]]=(rhythmGrid==='mixed'?mixedDefaults:rhythmGrid==='triplet16'?triplet16Defaults:rhythmGrid==='triplet'?tripletDefaults:extendedDefaults)[r][selected[r]].slice();
  hatBanks[selected[0]]=Array.from({length:stepCount()},defaultHatStep);saveHats();
+ for(let r=0;r<3;r++)if(variationLength(r)===2){secondData().initialized[r][selected[r]]=false;ensureSecond(r,selected[r])}
+ saveSecond();
  snareDynamics[selected[1]]=Array(stepCount()).fill('normal');saveSnareDynamics();
  refreshPatterns();saveVariations();seq();score();
 };
@@ -964,6 +1171,15 @@ $('copyVar').onclick=()=>{
  if(dest<0){alert('בחר A עד H');return}
  if(dest===selected[r])return;
  instrumentBanks[r][dest]=instrumentBanks[r][selected[r]].slice();
+ variationLengths[r][dest]=variationLengths[r][selected[r]];saveLengths();
+ if(variationLength(r)===2){
+  ensureSecond(r,selected[r]);
+  secondData().patterns[r][dest]=secondData().patterns[r][selected[r]].slice();
+  secondData().initialized[r][dest]=true;
+  if(r===1)secondData().snare[dest]=secondData().snare[selected[r]].slice();
+  if(r===0)secondData().hats[dest]=secondData().hats[selected[r]].map(v=>({...v}));
+  saveSecond();
+ }
  if(r===0){hatBanks[dest]=hatBanks[selected[0]].map(v=>({...v}));saveHats()}
  if(r===1){snareDynamics[dest]=snareDynamics[selected[1]].slice();saveSnareDynamics()}
  saveVariations();
@@ -971,13 +1187,16 @@ $('copyVar').onclick=()=>{
 };
 $('hatEditor').querySelectorAll('[data-hat-type]').forEach(b=>b.onclick=()=>changeHat('type',b.dataset.hatType));
 $('hatEditor').querySelectorAll('[data-hat-level]').forEach(b=>b.onclick=()=>changeHat('level',b.dataset.hatLevel));
-$('hatRemove').onclick=()=>{if(editedHatStep!==null){patterns[0][editedHatStep]=false;saveVariations();closeHatEditor();seq();score()}};
+$('hatRemove').onclick=()=>{if(editedHatStep!==null){patternFor(0,editedHatBar)[editedHatStep]=false;saveVariations();saveSecond();closeHatEditor();seq();score()}};
 $('closeHatEditor').onclick=closeHatEditor;
 $('hatEditor').onclick=e=>{if(e.target===$('hatEditor'))closeHatEditor()};
 $('snareEditor').querySelectorAll('[data-snare-level]').forEach(b=>b.onclick=()=>assignSnareLevel(b.dataset.snareLevel));
 $('closeSnareEditor').onclick=closeSnareEditor;
 $('snareEditor').onclick=e=>{if(e.target===$('snareEditor'))closeSnareEditor()};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('snareEditor').hidden)closeSnareEditor();if(!$('hatEditor').hidden)closeHatEditor()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('snareEditor').hidden)closeSnareEditor();if(!$('hatEditor').hidden)closeHatEditor();if(!$('lengthEditor').hidden)closeLengthEditor()}});
+$('lengthEditor').querySelectorAll('[data-var-length]').forEach(b=>b.onclick=()=>setEditedLength(Number(b.dataset.varLength)));
+$('lengthEditorClose').onclick=closeLengthEditor;
+$('lengthEditor').onclick=e=>{if(e.target===$('lengthEditor'))closeLengthEditor()};
 paintVariations();seq();window.addEventListener('load',score);
 })();
 </script><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת.</p></main></html>
