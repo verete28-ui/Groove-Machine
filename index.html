@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 0.7</title>
+<title>Groove Lab 0.8</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -14,7 +14,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">0.7</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div><button id="toggle">⚙ הגדרות ▾</button></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">0.8</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת</div></div><button id="toggle">⚙ הגדרות ▾</button></header>
 <section id="settings" class="panel line"><label>BPM <input type="range" id="bpm" min="40" max="180" value="80"> <b id="bpmOut">80</b></label><label><input id="loop" type="checkbox" checked> לופ</label><label><input id="metro" type="checkbox"> קליק</label><button id="reset">איפוס</button></section>
 <div class="tabs"><button class="active" data-view="seq">סיקוונסר</button><button data-view="score">תווים</button></div>
 <section class="panel"><div id="seq" class="grid"></div><div id="scoreWrap" class="hide"><div id="score"></div><p id="scoreMsg" class="small">תיווי לתרגול · קריאה בלבד</p></div>
@@ -45,9 +45,6 @@ function score(){
   const durations={1:'16',2:'8',4:'q'};
   const anyHit=i=>patterns.some(row=>row[i]);
   for(let beat=0;beat<4;beat++){
-   const onset=[];
-   for(let s=beat*4;s<(beat+1)*4;s++)if(anyHit(s))onset.push(s);
-   let cursor=beat*4;
    const beatNotes=[];
    const append=(at,length,rest)=>{
     const keys=[];
@@ -61,32 +58,24 @@ function score(){
      duration:durations[length]+(rest?'r':''),
      stem_direction:1
     });
-    // Selectable positions in the display remain read-only.
     notes.push(n);stepsOfNotes.push(at);beatNotes.push({note:n,rest,length});
    };
-   for(let j=0;j<onset.length;j++){
-    const at=onset[j];
-    // Split silence into conventional aligned durations.
-    while(cursor<at){
-     let size=4;
-     while(size>at-cursor||cursor%size!==0)size/=2;
-     append(cursor,size,true);cursor+=size;
-    }
-    const last=j+1<onset.length?onset[j+1]:(beat+1)*4;
-    let remaining=last-at,atPart=at;
-    while(remaining>0){
-     let size=4;
-     while(size>remaining||atPart%size!==0)size/=2;
-     append(atPart,size,atPart!==at);
-     remaining-=size;atPart+=size;cursor=atPart;
+   const start=beat*4;
+   // Align to both eighth-note subdivisions in EVERY beat, including beat four.
+   // A missing offbeat becomes an eighth rest instead of extending the previous note.
+   if(![0,1,2,3].some(i=>anyHit(start+i))){
+    append(start,4,true);
+   }else{
+    for(let half=0;half<2;half++){
+     const s=start+half*2,first=anyHit(s),second=anyHit(s+1);
+     if(second){
+      append(s,1,!first);
+      append(s+1,1,false);
+     }else{
+      append(s,2,!first);
+     }
     }
    }
-   while(cursor<(beat+1)*4){
-    let size=4;
-    while(size>(beat+1)*4-cursor||cursor%size!==0)size/=2;
-    append(cursor,size,true);cursor+=size;
-   }
-   // Beaming removes flags from connected eighth and sixteenth notes.
    let group=[];
    const flush=()=>{if(group.length>=2)beamGroups.push(group);group=[]};
    for(const item of beatNotes){
@@ -122,7 +111,7 @@ function score(){
    svg.appendChild(scoreCursor);
    markScore(shownStep);
   }
-  $('scoreMsg').textContent='תיווי בסנכרון עם הנגן · תיבה אחת של 4/4';
+  $('scoreMsg').textContent='תיווי בסנכרון עם הנגן · הפסקות מדויקות גם בפעמה 4';
  }catch(e){$('scoreMsg').textContent='שגיאה בתיווי: '+e.message}
 }
 function init(){if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return false;ctx=new C();bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination)}ctx.resume();return true}
