@@ -5,7 +5,7 @@ window.GROOVE_MACHINE={
   "labels": [
     [
       "שמיניות",
-      "שמיניות · אוף־ביט מודגש",
+      "Spang-a-lang ישר",
       "אוף־ביט",
       "Spang ישר",
       "קישוט 16",
@@ -57,7 +57,7 @@ window.GROOVE_MACHINE={
       [
         true,
         false,
-        true,
+        false,
         false,
         true,
         false,
@@ -65,7 +65,7 @@ window.GROOVE_MACHINE={
         false,
         true,
         false,
-        true,
+        false,
         false,
         true,
         false,
@@ -476,10 +476,10 @@ window.GROOVE_MACHINE={
   ]
 };
 
-/* H2: preserve other saved grooves and user settings; apply this lesson once. */
+/* H2 replacement: preserve all other variations and their settings. */
 try {
  const prefix=window.GROOVE_MACHINE.storagePrefix;
- const flag=prefix+'-lesson-h2-offbeat-v1';
+ const flag=prefix+'-lesson-h2-spang-v1';
  if(localStorage.getItem(flag)!=='done'){
   const patternKey=prefix+'-per-instrument-v3';
   const banks=JSON.parse(localStorage.getItem(patternKey));
@@ -490,7 +490,7 @@ try {
   const hatKey=prefix+'-hihat-articulations-v1';
   const hats=JSON.parse(localStorage.getItem(hatKey))||Array.from({length:8},()=>Array.from({length:16},()=>({type:'closed',level:'normal'})));
   if(Array.isArray(hats)&&hats.length===8&&Array.isArray(hats[1])&&hats[1].length===16){
-   hats[1]=Array.from({length:16},(_,i)=>({type:'closed',level:[2,6,10,14].includes(i)?'accent':'normal'}));
+   hats[1]=Array.from({length:16},()=>({type:'closed',level:'normal'}));
    localStorage.setItem(hatKey,JSON.stringify(hats));
   }
   localStorage.setItem(flag,'done');
