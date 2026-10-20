@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 3.3</title>
+<title>Groove Lab 3.4-dev</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -66,7 +66,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">3.3</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">3.4-dev</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
@@ -74,7 +74,20 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
  <label>חלוקת קצב <select id="rhythmGrid"><option value="straight">רגיל · 16 צעדים</option><option value="triplet">טריולות שמיניות · 12 צעדים</option><option value="triplet16">טריולות שש־עשריות · 24 צעדים</option><option value="mixed">משולב · חלוקה לכל פעמה</option></select></label>
 
  <label id="swingSetting">Swing <input type="range" id="swing" min="50" max="75" value="50" step="1"><b id="swingOut">50%</b></label>
- <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label><input id="loop" type="checkbox" checked> לופ</label>
+ <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option><option value="local">Reggae · קבצים שלי</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span>
+ <details id="localSamplePanel" class="fold" style="grid-column:1/-1"><summary>🥁 טעינת סאמפלים אישיים (Reggae)</summary>
+ <div class="fold-body">
+ <p class="small">בחר קובצי אודיו שהורדת באופן חוקי. הקבצים נטענים בזיכרון המכשיר בלבד, אינם מועלים לשרת ואינם נשמרים לאחר רענון.</p>
+ <div class="control-grid">
+ <label>קיק <input type="file" accept="audio/*,.wav,.mp3,.m4a,.flac" data-local-drum="kd"></label>
+ <label>סנר <input type="file" accept="audio/*,.wav,.mp3,.m4a,.flac" data-local-drum="sn"></label>
+ <label>היי־האט סגור <input type="file" accept="audio/*,.wav,.mp3,.m4a,.flac" data-local-drum="hh"></label>
+ <label>היי־האט פתוח <input type="file" accept="audio/*,.wav,.mp3,.m4a,.flac" data-local-drum="hhOpen"></label>
+ <label>היי־האט פדאל (רשות) <input type="file" accept="audio/*,.wav,.mp3,.m4a,.flac" data-local-drum="hhPedal"></label>
+ <label>היי־האט חצי פתוח (רשות) <input type="file" accept="audio/*,.wav,.mp3,.m4a,.flac" data-local-drum="hhHalf"></label>
+ </div>
+ <div class="line"><button id="applyLocalSamples" type="button">טען והפעל את הסאמפלים</button><span class="small" id="localSampleStatus">דרושים קיק, סנר, היי־האט סגור ופתוח</span></div>
+ </div></details><label><input id="loop" type="checkbox" checked> לופ</label>
  <button id="reset">איפוס וריאציות פעילות</button>
 </div></details>
 <details class="fold" id="clickFold">
@@ -873,10 +886,10 @@ const sampleBuffers={};
 const samplePromises={};
 const sampleKey='groove-lab-sound-kit-v1';
 try{const stored=localStorage.getItem(sampleKey);if(['studio','dub','synth','acoustic'].includes(stored))$('soundKit').value=stored;else $('soundKit').value='acoustic'}catch(e){$('soundKit').value='acoustic'}
-function chosenSet(kit){return kit==='acoustic'?'acoustic':'studio'}
+function chosenSet(kit){return kit==='acoustic'?'acoustic':kit==='local'?'local':'studio'}
 function isReady(kit){const buffers=sampleBuffers[chosenSet(kit)];return buffers&&['hh','sn','kd'].every(k=>buffers[k]?.length)}
 function ensureSamples(kit=$('soundKit').value){
- if(kit==='synth'||!ctx)return Promise.resolve(false);
+ if(kit==='synth'||kit==='local'||!ctx)return Promise.resolve(false);
  const set=chosenSet(kit);
  if(isReady(kit)){updateSampleStatus();return Promise.resolve(true)}
  if(samplePromises[set])return samplePromises[set];
@@ -893,8 +906,34 @@ function ensureSamples(kit=$('soundKit').value){
  return samplePromises[set];
 }
 function updateSampleStatus(message){
- $('sampleStatus').textContent=message||($('soundKit').value==='synth'?'צלילים סינתטיים':isReady($('soundKit').value)?'✓ סמפלים מוקלטים פעילים':'סמפלים עדיין לא נטענו');
+ const kit=$('soundKit').value;
+ $('sampleStatus').textContent=message||(kit==='synth'?'צלילים סינתטיים':kit==='local'?(isReady('local')?'✓ דגימות אישיות פעילות':'דרושה טעינת קבצי קיק, סנר והיי־האט'):isReady(kit)?'✓ סמפלים מוקלטים פעילים':'סמפלים עדיין לא נטענו');
 }
+async function loadLocalSamples(){
+ const button=$('applyLocalSamples'),status=$('localSampleStatus');
+ const inputs=Array.from(document.querySelectorAll('[data-local-drum]'));
+ const required=['kd','sn','hh','hhOpen'];
+ if(required.some(key=>!inputs.find(input=>input.dataset.localDrum===key)?.files?.length)){
+  status.textContent='יש לבחור לפחות קיק, סנר, היי־האט סגור ופתוח';return;
+ }
+ button.disabled=true;status.textContent='טוען קבצים מקומיים…';
+ try{
+  if(!init())throw new Error('המכשיר לא תומך ב־Web Audio');
+  const loaded={};
+  for(const input of inputs){
+   const file=input.files?.[0];if(!file)continue;
+   if(file.size>20*1024*1024)throw new Error('הקובץ גדול מדי: '+file.name);
+   loaded[input.dataset.localDrum]=[await ctx.decodeAudioData(await file.arrayBuffer())];
+  }
+  if(!loaded.hhHalf)loaded.hhHalf=loaded.hhOpen;
+  if(!loaded.hhPedal)loaded.hhPedal=loaded.hh;
+  sampleBuffers.local=loaded;
+  $('soundKit').value='local';
+  status.textContent='✓ הקבצים נטענו; ערכת Reggae האישית פועלת';updateSampleStatus();
+ }catch(e){status.textContent='הטעינה נכשלה: '+e.message;console.warn('Local audio import failed',e)}
+ finally{button.disabled=false}
+}
+
 function sampleHit(key,time,kit,velocity=1,registerHat=false){
  const set=chosenSet(kit),buffers=sampleBuffers[set]?.[key];
  if(!buffers?.length)return false;
@@ -902,10 +941,16 @@ function sampleHit(key,time,kit,velocity=1,registerHat=false){
  // Round-robin is reserved for Acoustic HD; Studio and Dub play the same sample every hit.
  const buffer=kit==='acoustic'?buffers[Math.floor(Math.random()*buffers.length)]:buffers[0];
  src.buffer=buffer;
- const isDub=kit==='dub',isAcoustic=kit==='acoustic';
- const level=isAcoustic?({hh:.34,hhHalf:.32,hhOpen:.28,hhPedal:.40,sn:.58,kd:.78}[key]):isDub?({hh:.32,sn:.52,kd:.75}[key]):({hh:.43,sn:.66,kd:.85}[key]);
+ const isDub=kit==='dub',isAcoustic=kit==='acoustic',isLocal=kit==='local';
+ const level=isLocal?({hh:.70,hhHalf:.60,hhOpen:.60,hhPedal:.70,sn:.83,kd:.88}[key]):isAcoustic?({hh:.34,hhHalf:.32,hhOpen:.28,hhPedal:.40,sn:.58,kd:.78}[key]):isDub?({hh:.32,sn:.52,kd:.75}[key]):({hh:.43,sn:.66,kd:.85}[key]);
  gain.gain.setValueAtTime(level*velocity,time);
  let end=buffer.duration,output=gain;
+ if(isLocal&&(key==='hhHalf'||key==='hhPedal')){
+  const shortEnd=Math.min(end,key==='hhHalf'?.30:.09);
+  gain.gain.setValueAtTime(level*velocity,time+Math.max(.001,shortEnd-.025));
+  gain.gain.exponentialRampToValueAtTime(.001,time+shortEnd);
+  end=shortEnd;
+ }
  if(isDub){
   const filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=key==='hh'?4200:key==='sn'?3500:1900;
   src.connect(filter);filter.connect(gain);
@@ -919,7 +964,7 @@ function sampleHit(key,time,kit,velocity=1,registerHat=false){
  gain.connect(bus);
  if(registerHat)activeOpenHats.push({gain:gain.gain,time});
  src.start(time);
- if(isDub)src.stop(time+end+.005);
+ if(isDub||(isLocal&&(key==='hhHalf'||key==='hhPedal')))src.stop(time+end+.005);
  return true;
 }
 let activeOpenHats=[];
@@ -966,15 +1011,15 @@ function sound(i,t,bar=playingBar){
    // A new stick/pedal articulation replaces the previous ringing open hat.
    // This also avoids stacking two open samples when a phrase repeats.
    chokeHats(t);
-   const key=kit==='acoustic'?({closed:'hh',half:'hhHalf',open:'hhOpen',pedal:'hhPedal'})[hh.type]:'hh';
+   const key=(kit==='acoustic'||kit==='local')?({closed:'hh',half:'hhHalf',open:'hhOpen',pedal:'hhPedal'})[hh.type]:'hh';
    const played=sample&&sampleHit(key,t,kit,velocity,open);
-   if(!played)syntheticHat(t,hh.type,velocity);
+   if(!played&&kit!=='local')syntheticHat(t,hh.type,velocity);
   }
   if(!trackMuted[1]&&patterns[1][i]){
    const velocity=snareGain(i);
-   if(!sample||!sampleHit('sn',t,kit,velocity)){noise(t,.13,1100,.48*velocity);tone(t,170,.07,.15*velocity)}
+   if(!sample||!sampleHit('sn',t,kit,velocity)){if(kit!=='local'){noise(t,.13,1100,.48*velocity);tone(t,170,.07,.15*velocity)}}
   }
-  if(!trackMuted[2]&&patterns[2][i]&&(!sample||!sampleHit('kd',t,kit)))tone(t,145,.24,.85,43);
+  if(!trackMuted[2]&&patterns[2][i]&&(!sample||!sampleHit('kd',t,kit))&&kit!=='local')tone(t,145,.24,.85,43);
  }
  if($('metro').checked){
   const div=Number($('clickDivision').value);
@@ -1035,9 +1080,10 @@ function tick(){
 $('play').onclick=()=>{if(running){stop();return}if(!init())return;running=true;rev++;position=0;playingBar=0;shownBar=0;next=ctx.currentTime+.05;$('play').textContent='Ⅱ השהה';tick();timer=setInterval(tick,20)};
 $('stop').onclick=stop;
 $('bpm').oninput=()=>{$('bpmOut').textContent=$('bpm').value};
+$('applyLocalSamples').onclick=loadLocalSamples;
 $('soundKit').onchange=()=>{
- try{localStorage.setItem(sampleKey,$('soundKit').value)}catch(e){}
- if($('soundKit').value!=='synth'&&ctx)ensureSamples();
+ try{if($('soundKit').value!=='local')localStorage.setItem(sampleKey,$('soundKit').value)}catch(e){}
+ if($('soundKit').value!=='synth'&&$('soundKit').value!=='local'&&ctx)ensureSamples();
  updateSampleStatus();
 };
 function syncRhythmSettings(){
