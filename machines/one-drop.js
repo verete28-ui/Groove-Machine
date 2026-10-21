@@ -570,3 +570,37 @@ try {
   },{once:true});
  }catch(e){console.warn('Restore H1-H4',e)}
 })();
+
+
+/* One Drop snare S1-S6 independent variations v1 */
+(function(){
+ const E=window.GrooveVariationEngine,m=window.GROOVE_MACHINE;
+ if(!E||!m)return;
+ const prefix=m.storagePrefix,bankKey=prefix+'-variation-objects-v1',flag=prefix+'-snare-s1-s6-v1';
+ const n=(tick,velocity='normal',articulation='normal')=>({tick,velocity,articulation});
+ const b=(notes,divisions=[4,4,4,4])=>({divisions,notes});
+ const entries=[
+  ['One Drop',[b([n(24,'accent')])]],
+  ['Rockers · 2 ו־4',[b([n(12,'accent','rim'),n(36,'accent','rim')])]],
+  ['Early One Drop',[b([n(18,'soft','cross-stick'),n(24,'accent')])]],
+  ['Ghost Groove',[b([n(21,'ghost'),n(24,'accent'),n(33,'ghost')])]],
+  ['Dub Space · שתי תיבות',[b([n(24,'accent')]),b([n(42,'soft','cross-stick')])]],
+  ['Reggae Fill',[b([n(24,'accent'),n(42,'soft'),n(45,'normal')])]]
+ ];
+ const presets=entries.map(([name,bars],i)=>E.normalizeVariation({id:'SN'+(i+1),name,bars},'SN'));
+ m.labels[1].splice(0,6,...presets.map(v=>v.name));
+ function apply(){
+  if(localStorage.getItem(flag)==='done')return true;
+  const saved=localStorage.getItem(bankKey);if(!saved)return false;
+  const banks=E.deserializeBanks(saved);
+  const backup=prefix+'-before-snare-s1-s6-v1';
+  if(!localStorage.getItem(backup))localStorage.setItem(backup,saved);
+  for(let i=0;i<presets.length;i++)banks[1][i]=presets[i];
+  localStorage.setItem(bankKey,E.serializeBanks(banks));
+  localStorage.setItem(flag,'done');
+  return true;
+ }
+ try{
+  if(!apply())window.addEventListener('load',()=>{try{if(apply())location.reload()}catch(e){console.warn('Snare init',e)}},{once:true});
+ }catch(e){console.warn('Snare init',e)}
+})();
