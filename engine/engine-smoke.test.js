@@ -13,6 +13,7 @@ function smokeGrooveCore({core,engine,machine}){
   }
   append(...nodes){this.children.push(...nodes)}
   appendChild(child){this.append(child);return child}
+  insertBefore(child,other){const index=this.children.indexOf(other);if(index<0)this.children.push(child);else this.children.splice(index,0,child);return child}
   replaceChildren(...nodes){this.children=nodes}
   querySelector(){return new Element()}
   querySelectorAll(){return []}
