@@ -160,7 +160,7 @@ function paintVariations(){
    const cell=document.createElement('div');cell.className='variation-cell';
    const btn=document.createElement('button');btn.className='variation-btn';
    btn.textContent='ABCDEFGH'[i];
-   const detail=document.createElement('span');detail.className='vlabel';detail.textContent=instrumentLabels[r][i];btn.append(detail);
+   const detail=document.createElement('span');detail.className='vlabel';detail.textContent=independentMode&&independentBanks?selectedV(r,i).name:instrumentLabels[r][i];btn.append(detail);
    const marker=document.createElement('span');marker.className='variation-marker';
    marker.textContent=variationLength(r,i)===2?'Ⅱ':'Ⅰ';btn.append(marker);
    btn.className='variation-btn '+(i===selected[r]?'active ':'')+(i===pending[r]?'pending':'');
