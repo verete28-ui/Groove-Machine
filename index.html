@@ -1217,7 +1217,68 @@ function mark(s,bar=shownBar){
  markScore(s,bar);
 }
 function stop(){running=false;applyQueuedBeatDivisions();playingBar=0;shownBar=0;activeOpenHats=[];pending=[null,null,null];paintVariations();rev++;clearInterval(timer);timer=null;position=0;mark(-1);$('play').textContent='▶ נגן';$('status').textContent='מוכן';if(ctx){bus.gain.setTargetAtTime(0,ctx.currentTime,.008);bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination);if(reggaeWet){reggaeWet.disconnect();reggaeWet.connect(bus)}}}
+function soundV2(e,t){
+ if(!$('drumsEnabled').checked||trackMuted[e.lane])return;
+ const kit=$('soundKit').value,recorded=kit!=='synth';
+ const level=e.velocity||'normal',velocity=({ghost:.24,soft:.38,normal:1,accent:1.38})[level]||1;
+ if(e.lane===0){
+  chokeHats(t);
+  const type=['closed','half','open','pedal'].includes(e.articulation)?e.articulation:'closed';
+  const key=(kit==='acoustic'||kit==='avl'||kit==='salamanderReggae')?({closed:'hh',half:'hhHalf',open:'hhOpen',pedal:'hhPedal'})[type]:'hh';
+  const played=recorded&&sampleHit(key,t,kit,velocity,type==='open'||type==='half');
+  if(!played&&kit!=='avl'&&kit!=='salamanderReggae')syntheticHat(t,type,velocity);
+ }else if(e.lane===1){
+  const key=kit==='avl'&&level==='ghost'?'snEdge':kit==='salamanderReggae'&&level==='ghost'?'snGhost':'sn';
+  if(kit==='salamanderReggae'&&(level==='accent'||e.articulation==='rim')){
+   sampleHit('sn',t,kit,.92);sampleHit('rim',t,kit,.86);
+  }else if(!recorded||!sampleHit(key,t,kit,velocity)){
+   if(kit!=='avl'&&kit!=='salamanderReggae'){noise(t,.13,1100,.48*velocity);tone(t,170,.07,.15*velocity)}
+  }
+ }else{
+  if((!recorded||!sampleHit('kd',t,kit,velocity))&&kit!=='avl'&&kit!=='salamanderReggae')tone(t,145,.24,.85,43);
+ }
+}
+function tickV2(){
+ if(!running)return;
+ const revision=rev;
+ while(next<ctx.currentTime+.09&&running){
+  applyPendingVariations();
+  const variations=E.compose(independentBanks,selected);
+  const quarters=60/Number($('bpm').value),swing=Number($('swing').value)/100;
+  const events=E.timeline(variations,swing),total=E.cycleBars(variations);
+  chokeHats(next);
+  for(const event of events){
+   const at=next+event.quarter*quarters;
+   soundV2(event,at);
+  }
+  if($('metro').checked){
+   const division=Number($('clickDivision').value),perBeat=division===4?1:division===2?2:4;
+   for(let bar=0;bar<total;bar++)for(let beat=0;beat<4;beat++)for(let j=0;j<perBeat;j++){
+    const at=next+(bar*4+beat+j/perBeat)*quarters;
+    metronomeClick(at,$('clickAccent').checked&&bar===0&&beat===0&&j===0,Number($('clickVolume').value)/100);
+   }
+  }
+  const unique=new Set();
+  for(const event of events){
+   const k=event.bar+':'+event.tick;
+   if(unique.has(k))continue;
+   unique.add(k);
+   const at=next+event.quarter*quarters;
+   setTimeout(()=>{if(running&&rev===revision){
+    mark(event.tick,event.bar);
+    $('status').textContent='תיבה '+(event.bar+1)+' · פעמה '+(Math.floor(event.tick/12)+1);
+   }},Math.max(0,(at-ctx.currentTime)*1000));
+  }
+  next+=total*4*quarters;
+  if(!$('loop').checked){
+   clearInterval(timer);timer=null;
+   setTimeout(()=>{if(rev===revision)stop()},Math.max(0,(next-ctx.currentTime)*1000));
+   break;
+  }
+ }
+}
 function tick(){
+ if(independentMode)return tickV2();
  if(!running)return;
  const revision=rev;
  while(next<ctx.currentTime+.09&&running){
