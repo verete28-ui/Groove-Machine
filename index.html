@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Groove Lab 3.1</title>
+<title>Groove Lab 3.5</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
 button{background:#263a48;color:inherit;border:1px solid #507084;border-radius:9px;padding:10px;cursor:pointer;font:inherit}
 button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#182630;border-radius:12px;padding:12px;margin:12px 0}
-.hide{display:none!important}
+.hide{display:none!important}[hidden]{display:none!important}
 .fold{border:1px solid #455a67;background:#182630;border-radius:12px;margin:10px 0;overflow:hidden}
 .fold summary{cursor:pointer;list-style:none;padding:13px 12px;display:flex;align-items:center;justify-content:space-between;font-weight:650;touch-action:manipulation}
 .fold summary::-webkit-details-marker{display:none}
@@ -39,14 +39,35 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .beat-selectors select{background:#263a48;color:#fff;border:1px solid #507084;border-radius:7px;padding:5px 2px;width:100%;font-size:12px}
 .beat-slice{display:grid;min-width:0;gap:2px}
 .beat-slice .step{min-width:0}
+.bar-panel{border:1px solid #54707d;border-radius:10px;padding:7px 4px;margin:8px 0;min-width:0}.bar-panel.is-active{border:2px solid #2bb5cc;background:#19333d}
+.bar-panel .track{margin:8px 0}.bar-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin:3px 0 7px}.repeat-label{font-size:11px;color:#acc2ce}
+
 .beat-slice{position:relative}.off-grid{position:absolute;top:100%;left:0;padding:1px 4px;background:#aa6731;border:0;border-radius:5px;font-size:10px;min-height:14px;z-index:2}
 .track:has(.off-grid){margin-bottom:24px}
 .beats{display:grid;grid-template-columns:71px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
+.score-bar-panel{border:1px solid #71818a;border-radius:9px;padding:5px;margin-bottom:10px;overflow:hidden}.score-bar-panel.is-active{border:2px solid #25b5cf}.score-bar-heading{direction:rtl;font-size:12px;font-weight:700;margin:0 3px 3px;color:#394854}
 #score{direction:ltr;overflow:hidden;background:#fff;color:#17212a;border-radius:8px;min-height:0;width:100%}#score svg{display:block;width:100%;height:auto;max-width:100%}
-.variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
+.variations{display:flex;flex-direction:column;gap:7px;margin:9px 0}
+.variation-row{display:grid;grid-template-columns:30px repeat(8,minmax(0,1fr));gap:4px;align-items:center;direction:ltr}
+.variation-row>span{font-size:11px;font-weight:700}
+.variations button{min-width:0;line-height:1.1}
+.variations button .vlabel{display:none}
+.variation-cell{min-width:0}
+.variation-cell>.variation-btn{width:100%;min-height:39px;padding:4px 0 3px;font-size:13px;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.variation-cell .variation-marker{display:block;font-size:10px;line-height:11px;font-weight:700;opacity:.88;margin-top:3px}
+@media (min-width:540px){.variation-row{grid-template-columns:36px repeat(8,minmax(0,1fr));gap:6px}.variation-cell>.variation-btn{min-height:44px}.variations button .vlabel{display:block;font-size:9px;font-weight:400;margin-top:2px;opacity:.8}}
+#lengthEditor{position:fixed;inset:0;background:#000a;z-index:25;display:flex;justify-content:center;align-items:center;padding:16px}
+#lengthEditor[hidden]{display:none}
+#lengthEditor .editor-content{background:#20323e;border:1px solid #628096;border-radius:14px;width:min(330px,100%);padding:16px;display:grid;gap:10px}
+#lengthEditor .choice{width:100%;text-align:right}.choice.is-selected{background:#087d9a;border-color:#44c5d9}
+.bar-panel{border:1px solid #54707d;border-radius:10px;padding:7px 5px;margin:8px 0;min-width:0}.bar-panel.is-active{border:2px solid #2bb5cc;background:#19333d}.bar-panel .track{margin:10px 0}
+.bar-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin:3px 0 7px}
+.bar-head .repeat-label{font-size:11px;color:#acc2ce}.bar-panel .beat-controls{margin-top:4px}
+.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 </style>
 <main>
-<header><div><h1>🥁 Groove Lab <small style="font-size:12px">3.1</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
+<header><div><h1>🥁 Groove Lab <small style="font-size:12px">3.5</small></h1><div class="small">מכונת תופים לימודית · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
+<nav class="small" style="display:flex;gap:12px;flex-wrap:wrap;margin:7px 0 12px"><a style="color:#8edcf4" href="index.html?independent=1">Groove Lab · מנוע עצמאי</a><a style="color:#8edcf4" href="one-drop.html?independent=1">One Drop · מנוע עצמאי</a><a style="color:#8edcf4" href="variation-engine-demo.html">בדיקת ציר הזמן</a></nav>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
@@ -54,7 +75,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
  <label>חלוקת קצב <select id="rhythmGrid"><option value="straight">רגיל · 16 צעדים</option><option value="triplet">טריולות שמיניות · 12 צעדים</option><option value="triplet16">טריולות שש־עשריות · 24 צעדים</option><option value="mixed">משולב · חלוקה לכל פעמה</option></select></label>
 
  <label id="swingSetting">Swing <input type="range" id="swing" min="50" max="75" value="50" step="1"><b id="swingOut">50%</b></label>
- <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label><input id="loop" type="checkbox" checked> לופ</label>
+ <label><input type="checkbox" id="independentSwitch"> חלוקה עצמאית לכל וריאציה</label><span class="small">גריד עצמאי: נגיעה קצרה מוסיפה/מסירה מכה; נגיעה ארוכה בסנר/היי־האט עורכת את הצליל. עריכה אפשרית גם בזמן נגינה.</span><label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option><option value="avl">AVL Black Pearl · ניסיון</option><option value="salamanderReggae">Salamander · Reggae Resonance · ניסיון</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label id="reggaeReverbControl" hidden>רים־שוט · ריוורב <input type="range" id="reggaeReverb" min="0" max="100" step="5" value="45"><b id="reggaeReverbOut">45%</b></label><span id="reggaePreviewControl" hidden><button type="button" id="reggaeTestSnare">▶ סנר פתוח</button> <button type="button" id="reggaeTestRim">▶ רים + ריוורב</button></span><label><input id="loop" type="checkbox" checked> לופ</label>
  <button id="reset">איפוס וריאציות פעילות</button>
 </div></details>
 <details class="fold" id="clickFold">
@@ -68,10 +89,19 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 <details class="fold" id="variationsFold" open>
 <summary>וריאציות לפי כלי</summary>
 <div class="fold-body">
- <div class="small">A–H לכל כלי · מעבר בתחילת התיבה הבאה</div>
+ <div class="small">A–H לכל כלי · לחיצה רגילה לבחירה, ארוכה לשינוי אורך · Ⅰ תיבה אחת / Ⅱ שתי תיבות</div>
  <div class="variations" id="variations" dir="ltr"></div>
  <div class="line"><span class="small" id="variationStatus">HH A · SN A · KD A</span><div style="display:flex;gap:6px;flex-wrap:wrap"><button id="randomize" title="בחירת שילוב אקראי של היי־האט, סנר ובס">🎲 רנדומייז</button><button id="copyVar" title="העתקת וריאציית כלי ליעד אחר באותו כלי">העתק כלי…</button></div></div>
 </div></details>
+<div id="lengthEditor" hidden role="dialog" aria-modal="true" aria-labelledby="lengthEditorTitle">
+ <div class="editor-content">
+  <strong id="lengthEditorTitle">אורך וריאציה</strong>
+  <span class="small">בחר את אורך הווריאציה. שינוי זה לא מוחק את התיבה השנייה.</span>
+  <button class="choice" data-var-length="1">Ⅰ · תיבה אחת</button>
+  <button class="choice" data-var-length="2">Ⅱ · שתי תיבות</button>
+  <button id="lengthEditorClose">סגור</button>
+ </div>
+</div>
 <details class="fold" id="practiceFold" open><summary>🥁 תרגול — סיקוונסר / תווים</summary><div class="fold-body">
 <div class="line" style="margin:0 0 12px 0"><span class="small">סאונד התופים</span><label class="small" style="display:flex;align-items:center;gap:7px"><input type="checkbox" id="drumsEnabled" checked> 🔊 הפעל תופים</label></div>
 <div class="tabs"><button class="active" data-view="seq">סיקוונסר</button><button data-view="score">תווים</button></div>
@@ -98,4 +128,6 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 <button data-snare-level="off">– · ללא מכה</button>
 <button id="closeSnareEditor">סגור</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
-<script src="./engine/groove-core.js"></script><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת.</p></main></html>
+<script src="variation-engine.js"></script>
+<script src="engine/groove-core.js"></script>
+<p class="small" style="margin:15px 0"><a href="salamander-browser.html" style="color:#8edcf4;font-weight:700">🥁 דפדפן סאמפלים של Salamander (536 הקלטות)</a> · <a href="reggae-sample-test.html" style="color:#8edcf4">בדיקת סנר ורים + ריוורב</a> · <a href="snare-audition.html" style="color:#8edcf4">השוואת סנרים AVL</a> · <a href="kick-audition.html" style="color:#8edcf4">השוואת קיקים AVL</a> · <a href="hihat-audition.html" style="color:#8edcf4">השוואת היי־האט AVL</a></p><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת. Salamander Reggae Resonance — דגימות Salamander עם ריוורב בזמן אמת. AVL Black Pearl — <a style="color:#8edcf4" href="https://github.com/studiorack/avl-drumkits" target="_blank" rel="noopener">Glen MacArthur / AVL Drumkits</a>, CC BY-SA 3.0, קובצי FLAC מקוריים ללא עיבוד.</p></main></html>
