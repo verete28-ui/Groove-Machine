@@ -366,13 +366,13 @@ function scoreV2(){
     const width=680,renderer=new VF.Renderer(line,VF.Renderer.Backends.SVG);renderer.resize(width,112);
     const context=renderer.getContext(),stave=new VF.Stave(42,19,width-65);
     stave.addClef('percussion');stave.setContext(context).draw();
-    const notes=[],tuplets=[],beams=[];
+    const notes=[],tuplets=[],beams=[],marks=[];
     for(let beat=0;beat<4;beat++){
      const count=b.divisions[beat],duration=count<=3?'8':'16',group=[];
      for(let i=0;i<count;i++){
       const tick=beat*12+i*12/count,hit=b.notes.find(n=>n.tick===tick);
       const note=new VF.StaveNote({clef:'percussion',keys:[hit?['g/5/x','c/5','f/4'][r]:'b/4'],duration:duration+(hit?'':'r'),stem_direction:1});
-      group.push(note);notes.push(note);
+      group.push(note);notes.push(note);if(hit)marks.push({note,event:hit});
      }
      if(count===3)tuplets.push(new VF.Tuplet(group,{num_notes:3,notes_occupied:2,bracketed:true,ratioed:false}));
      if(count===6)for(let i=0;i<6;i+=3)tuplets.push(new VF.Tuplet(group.slice(i,i+3),{num_notes:3,notes_occupied:2,bracketed:true,ratioed:false}));
@@ -392,7 +392,36 @@ function scoreV2(){
     voice.draw(context,stave);
     beams.forEach(g=>new VF.Beam(g).setContext(context).draw());
     tuplets.forEach(t=>t.setContext(context).draw());
-    const svg=line.querySelector('svg');if(svg){svg.setAttribute('viewBox','0 0 '+width+' 112');svg.setAttribute('width','100%');svg.setAttribute('height','auto');svg.style.width='100%';svg.style.height='auto'}
+    const svg=line.querySelector('svg');if(svg){
+     svg.setAttribute('viewBox','0 0 '+width+' 112');svg.setAttribute('width','100%');svg.setAttribute('height','auto');svg.style.width='100%';svg.style.height='auto';
+     const ns='http://www.w3.org/2000/svg';
+     const labelAt=(x,y,label)=>{
+      const t=document.createElementNS(ns,'text');t.setAttribute('x',x);t.setAttribute('y',y);t.setAttribute('font-size','11');t.setAttribute('text-anchor','middle');t.setAttribute('fill','#263946');t.textContent=label;svg.append(t);
+     };
+     marks.forEach(({note,event})=>{
+      const x=note.getAbsoluteX();
+      if(r===0){
+       if(event.articulation==='open'){
+        const circle=document.createElementNS(ns,'circle');
+        circle.setAttribute('cx',x);circle.setAttribute('cy',note.getYs()[0]);
+        circle.setAttribute('r','8');circle.setAttribute('stroke','#263946');circle.setAttribute('fill','none');svg.append(circle);
+       }else if(event.articulation==='half')labelAt(x,14,'◐');
+       else if(event.articulation==='pedal')labelAt(x,14,'×');
+       if(event.velocity==='accent')labelAt(x,94,'>');
+       else if(event.velocity==='soft')labelAt(x,94,'p');
+      }else if(r===1){
+       if(event.articulation==='rim')labelAt(x,99,'R');
+       else if(event.velocity==='ghost')labelAt(x,99,'g');
+       else if(event.velocity==='accent')labelAt(x,99,'>');
+      }else if(event.velocity==='accent')labelAt(x,99,'>');
+     });
+    }
+    const offgrid=b.notes.filter(n=>!E.eventIsOnGrid(n.tick,b.divisions));
+    if(offgrid.length){
+     const warning=document.createElement('span');warning.className='small';
+     warning.style.color='#804924';warning.textContent='* אירועים שמורים מחוץ לחלוקה: '+offgrid.map(n=>n.tick).join(', ');
+     line.append(warning);
+    }
     const label=document.createElement('span');label.className='small';label.textContent=['HH','SN','KD'][r]+' · '+b.divisions.join('–');wrap.insertBefore(label,line);
    }catch(e){
     failures++;console.warn('Independent score lane error',r,bar,e);
