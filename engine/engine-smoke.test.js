@@ -78,7 +78,21 @@ function smokeGrooveCore({core,engine,machine}){
   };
   search(id('seq'));
   if(selectors.length!==12)throw Error('Expected 12 subdivision selectors, got '+selectors.length);
+  phase='notation';let notationTuplets=0;
+  const chain=()=>({addClef(){return this},setContext(){return this},draw(){return this},
+   addTimeSignature(){return this},getContext(){return {}},resize(){return this},setConfig(){return this}});
+  const Renderer=class{constructor(){this.core=chain()}resize(){}getContext(){return {}}};
+  Renderer.Backends={SVG:1};
+  const Stave=class{addClef(){return this}setContext(){return this}draw(){return this}};
+  const StaveNote=class{constructor(options){this.options=options}getAbsoluteX(){return 80}getYs(){return [28]}};
+  const Voice=class{addTickables(){return this}draw(){return this}};
+  const Formatter=class{joinVoices(){return this}format(){return this}};
+  const Tuplet=class{constructor(){notationTuplets++}setContext(){return this}draw(){return this}};
+  const Beam=class{setContext(){return this}draw(){return this}};
+  window.Vex={Flow:{Renderer,Stave,StaveNote,Voice,Formatter,Tuplet,Beam}};
   phase='edit';selectors[1].value='6';selectors[1].onchange();
+  if(notationTuplets===0)throw Error('Independent 6-part notation did not create triplet groups');
+  if(id('scoreMsg').textContent.includes('חלק מן התיווי'))throw Error('Independent notation failed');
   phase='saved-bank';const prefix=machine?.storagePrefix||'groove-lab',text=storage.get(prefix+'-variation-objects-v1');
   if(!text)throw Error('Independent variation bank was not saved');
   const bank=engine.deserializeBanks(text);
@@ -99,7 +113,7 @@ function smokeGrooveCore({core,engine,machine}){
   const a=offsets(first),b=offsets(second);
   if(JSON.stringify(a)!==JSON.stringify(b))throw Error('Snare/kick offsets changed during H5-H6 switch: '+JSON.stringify({a,b}));
   phase='return-to-legacy';id('independentSwitch').checked=false;id('independentSwitch').onchange();
-  return {passed:true,steps:10,variationButtons:buttons.length,beatSelectors:selectors.length,storagePrefix:prefix,scheduledOscillators:first.length+second.length,preservedRhythmEvents:a.length};
+  return {passed:true,steps:10,variationButtons:buttons.length,beatSelectors:selectors.length,storagePrefix:prefix,scheduledOscillators:first.length+second.length,preservedRhythmEvents:a.length,notationTuplets};
 
  }catch(e){return {passed:false,phase,error:String(e),stack:String(e.stack||'').slice(0,420)}}
 }
