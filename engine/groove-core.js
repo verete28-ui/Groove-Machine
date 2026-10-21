@@ -368,7 +368,8 @@ $('independentSwitch').onchange=()=>{
 };
 try{
  const query=new URLSearchParams(location.search);
- const remembered=localStorage.getItem(storagePrefix+'-independent-enabled-v1')==='true';
+ const savedMode=localStorage.getItem(storagePrefix+'-independent-enabled-v1');
+ const remembered=savedMode===null||savedMode==='true';
  if(remembered||query.get('independent')==='1'){
   $('independentSwitch').checked=true;activateIndependent();$('rhythmGrid').disabled=true;
   $('swingSetting').style.display='flex';
