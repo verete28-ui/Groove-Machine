@@ -74,7 +74,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
  <label>חלוקת קצב <select id="rhythmGrid"><option value="straight">רגיל · 16 צעדים</option><option value="triplet">טריולות שמיניות · 12 צעדים</option><option value="triplet16">טריולות שש־עשריות · 24 צעדים</option><option value="mixed">משולב · חלוקה לכל פעמה</option></select></label>
 
  <label id="swingSetting">Swing <input type="range" id="swing" min="50" max="75" value="50" step="1"><b id="swingOut">50%</b></label>
- <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option><option value="avl">AVL Black Pearl · ניסיון</option><option value="salamanderReggae">Salamander · Reggae Resonance · ניסיון</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label id="reggaeReverbControl" hidden>רים־שוט · ריוורב <input type="range" id="reggaeReverb" min="0" max="100" step="5" value="45"><b id="reggaeReverbOut">45%</b></label><span id="reggaePreviewControl" hidden><button type="button" id="reggaeTestSnare">▶ סנר פתוח</button> <button type="button" id="reggaeTestRim">▶ רים + ריוורב</button></span><label><input id="loop" type="checkbox" checked> לופ</label>
+ <label><input type="checkbox" id="independentSwitch"> חלוקה עצמאית לכל וריאציה · ניסוי</label><label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option><option value="avl">AVL Black Pearl · ניסיון</option><option value="salamanderReggae">Salamander · Reggae Resonance · ניסיון</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label id="reggaeReverbControl" hidden>רים־שוט · ריוורב <input type="range" id="reggaeReverb" min="0" max="100" step="5" value="45"><b id="reggaeReverbOut">45%</b></label><span id="reggaePreviewControl" hidden><button type="button" id="reggaeTestSnare">▶ סנר פתוח</button> <button type="button" id="reggaeTestRim">▶ רים + ריוורב</button></span><label><input id="loop" type="checkbox" checked> לופ</label>
  <button id="reset">איפוס וריאציות פעילות</button>
 </div></details>
 <details class="fold" id="clickFold">
@@ -127,6 +127,7 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 <button data-snare-level="off">– · ללא מכה</button>
 <button id="closeSnareEditor">סגור</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
+<script src="variation-engine.js"></script>
 <script>
 (()=>{
 const $=id=>document.getElementById(id);
@@ -227,13 +228,32 @@ if(rhythmGrid==='triplet')instrumentBanks=tripletBanks;
 if(rhythmGrid==='triplet16')instrumentBanks=triplet16Banks;
 if(rhythmGrid==='mixed')instrumentBanks=mixedBanks;
 let selected=[0,0,0],pending=[null,null,null];
+const E=window.GrooveVariationEngine;
+let independentMode=false,independentBanks=null;
+const newVariationKey='groove-lab-variation-objects-v1';
+const selectedV=(r,i=selected[r])=>independentBanks[r][i];
+const variationBar=(r,bar,i=selected[r])=>{const v=selectedV(r,i);return v.bars[bar%v.bars.length]};
+const variationNote=(r,bar,tick)=>variationBar(r,bar).notes.find(n=>n.tick===tick);
+function persistV(){try{localStorage.setItem(newVariationKey,E.serializeBanks(independentBanks))}catch(e){console.warn(e)}}
+function setVariationNote(r,bar,tick){
+ const notes=variationBar(r,bar).notes;let found=notes.find(n=>n.tick===tick);
+ if(!found){found={tick,velocity:'normal',articulation:r===0?'closed':'normal'};notes.push(found);notes.sort((a,b)=>a.tick-b.tick)}
+ return found;
+}
+function toggleVariationNote(r,bar,tick){
+ const notes=variationBar(r,bar).notes,i=notes.findIndex(n=>n.tick===tick);
+ if(i>=0)notes.splice(i,1);else setVariationNote(r,bar,tick);
+ persistV();seq();score();
+}
+
 const lengthKey='groove-lab-variation-lengths-v1';
 let variationLengths=Array.from({length:3},()=>Array(8).fill(1));
 try{const data=JSON.parse(localStorage.getItem(lengthKey));if(Array.isArray(data)&&data.length===3&&data.every(a=>Array.isArray(a)&&a.length===8))variationLengths=data.map(a=>a.map(n=>n===2?2:1))}catch(e){}
-const variationLength=(r,i=selected[r])=>variationLengths[r][i];
+const variationLength=(r,i=selected[r])=>independentMode&&independentBanks?selectedV(r,i).bars.length:variationLengths[r][i];
 const cycleBars=()=>selected.some((v,r)=>variationLength(r,v)===2)?2:1;
 function saveLengths(){try{localStorage.setItem(lengthKey,JSON.stringify(variationLengths))}catch(e){}}
 function toggleVariationLength(r,i){
+ if(independentMode){const v=selectedV(r,i);if(v.bars.length===1)v.bars.push(JSON.parse(JSON.stringify(v.bars[0])));else v.bars.pop();persistV();paintVariations();seq();score();return}
  variationLengths[r][i]=variationLengths[r][i]===2?1:2;saveLengths();
  if(variationLengths[r][i]===2)ensureSecond(r,i);
  if(!running){paintVariations();seq();score()}
@@ -355,6 +375,12 @@ function openSnareEditor(step,bar=0){editedSnareStep=step;editedSnareBar=bar;$('
 function closeSnareEditor(){editedSnareStep=null;$('snareEditor').hidden=true}
 function assignSnareLevel(level){
  if(editedSnareStep===null)return;
+ if(independentMode){
+  const notes=variationBar(1,editedSnareBar).notes,tick=editedSnareStep;
+  if(level==='off'){const i=notes.findIndex(n=>n.tick===tick);if(i>=0)notes.splice(i,1)}
+  else setVariationNote(1,editedSnareBar,tick).velocity=level;
+  persistV();closeSnareEditor();seq();score();return;
+ }
  const step=editedSnareStep;
  if(level==='off')patternFor(1,editedSnareBar)[step]=false;
  else{patternFor(1,editedSnareBar)[step]=true;snareRowAt(editedSnareBar)[step]=level}
@@ -386,7 +412,7 @@ const hatVelocity=step=>({soft:.38,normal:1,accent:1.35})[currentHat(step).level
 let editedHatStep=null;
 let editedHatBar=0;
 function paintHatEditor(){if(editedHatStep===null)return;
- const hit=hatAt(editedHatStep,editedHatBar);
+ const hit=independentMode?(()=>{const n=variationNote(0,editedHatBar,editedHatStep);return {type:n?.articulation||'closed',level:n?.velocity||'normal'}})():hatAt(editedHatStep,editedHatBar);
  $('hatEditor').querySelectorAll('[data-hat-type]').forEach(b=>b.classList.toggle('chosen',b.dataset.hatType===hit.type));
  $('hatEditor').querySelectorAll('[data-hat-level]').forEach(b=>b.classList.toggle('chosen',b.dataset.hatLevel===hit.level));
 }
@@ -394,6 +420,7 @@ function openHatEditor(step,bar=0){editedHatStep=step;editedHatBar=bar;$('hatEdi
 function closeHatEditor(){editedHatStep=null;$('hatEditor').hidden=true}
 function changeHat(kind,value){
  if(editedHatStep===null)return;
+ if(independentMode){const n=setVariationNote(0,editedHatBar,editedHatStep);if(kind==='type')n.articulation=value;else n.velocity=value;persistV();paintHatEditor();seq();score();return}
  const step=editedHatStep;
  hatAt(step,editedHatBar)[kind]=value;patternFor(0,editedHatBar)[step]=true;
  saveHats();saveVariations();saveSecond();paintHatEditor();seq();score();
@@ -421,14 +448,34 @@ function ensureSecond(r,i){
  d.initialized[r][i]=true;saveSecond();
 }
 function patternFor(r,bar=0,i=selected[r]){
+ if(independentMode){const row=Array(48).fill(false);variationBar(r,bar,i).notes.forEach(n=>row[n.tick]=true);return row}
  if(bar===0||variationLength(r,i)===1)return instrumentBanks[r][i];
  ensureSecond(r,i);return secondData().patterns[r][i];
 }
 function barPatterns(bar=0){return [0,1,2].map(r=>patternFor(r,bar))}
-function snareLevelAt(step,bar=0){return bar===1&&variationLength(1)===2?(ensureSecond(1,selected[1]),secondData().snare[selected[1]][step]):snareDynamics[selected[1]][step]}
-function hatAt(step,bar=0){return bar===1&&variationLength(0)===2?(ensureSecond(0,selected[0]),secondData().hats[selected[0]][step]):hatBanks[selected[0]][step]}
+function snareLevelAt(step,bar=0){if(independentMode)return variationNote(1,bar,step)?.velocity||'normal';return bar===1&&variationLength(1)===2?(ensureSecond(1,selected[1]),secondData().snare[selected[1]][step]):snareDynamics[selected[1]][step]}
+function hatAt(step,bar=0){if(independentMode){const n=variationNote(0,bar,step);return {type:n?.articulation||'closed',level:n?.velocity||'normal'}}return bar===1&&variationLength(0)===2?(ensureSecond(0,selected[0]),secondData().hats[selected[0]][step]):hatBanks[selected[0]][step]}
 function snareRowAt(bar=0){return bar===1&&variationLength(1)===2?(ensureSecond(1,selected[1]),secondData().snare[selected[1]]):snareDynamics[selected[1]]}
 function hatRowAt(bar=0){return bar===1&&variationLength(0)===2?(ensureSecond(0,selected[0]),secondData().hats[selected[0]]):hatBanks[selected[0]]}
+// Migration reads currently active legacy grid, preserving all original localStorage keys.
+try{const saved=localStorage.getItem(newVariationKey);if(saved)independentBanks=E.deserializeBanks(saved)}
+catch(e){console.warn('Invalid independent state',e)}
+function activateIndependent(){
+ if(!independentBanks){
+  independentBanks=E.migrateLegacy({mode:rhythmGrid,banks:instrumentBanks,labels:instrumentLabels,
+   firstDivisions:beatDivisionsForBar(0),secondDivisions:beatDivisionsForBar(1),
+   snareDynamics,hatBanks,lengths:variationLengths,second:secondData()});
+  persistV();
+ }
+ independentMode=true;
+}
+$('independentSwitch').onchange=()=>{
+ if(running)stop();
+ if($('independentSwitch').checked)activateIndependent();else independentMode=false;
+ $('rhythmGrid').disabled=independentMode;
+ $('swingSetting').style.display=independentMode?'flex':rhythmGrid==='straight'?'flex':'none';
+ paintVariations();seq();score();
+};
 let playingBar=0,shownBar=0;
 let scoreBarContext=0,scoreHost=null,scorePositionsByBar=[],scoreCursorsByBar=[];
 function score(){
