@@ -1,0 +1,78 @@
+<!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Groove Variation Engine · בדיקה</title>
+<style>body{background:#111b24;color:#eaf3f9;font:14px system-ui;padding:12px;max-width:760px;margin:auto}section{background:#20303e;border:1px solid #557080;padding:12px;border-radius:12px;margin:10px 0}button,select,input{font:inherit;background:#324656;color:white;border:1px solid #658b9d;border-radius:6px;padding:7px}button{cursor:pointer}button.selected{background:#167b96}.bar{margin:12px 0;padding:8px;border:1px solid #556d80;border-radius:8px}.beats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.beat{min-width:0}.beat select{width:52px}.steps{display:grid;gap:2px;margin-top:6px}.steps button{padding:8px 0;min-width:0}.steps button.on{background:#22a9b4;color:#021018}h1{font-size:21px}p{line-height:1.6;color:#bccbd7}.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px}</style>
+<h1>בדיקת מנוע · חלוקה עצמאית לכל כלי</h1>
+<p>שלושה כלים, שעון אחד של 12 טיקים לפעמה. הדגמה סינתטית בלבד; אינה משנה מקצבי One Drop או ערכות דגימות. החלף A/B בהיי־האט בזמן נגינה בלי לשנות את הסנר והקיק.</p>
+<section class="top"><button id="play">▶ נגן</button><button id="stop">■ עצור</button><label>BPM <input id="bpm" type="number" value="80" min="40" max="200" style="width:65px"></label><label>Swing <input id="swing" type="range" min="50" max="75" value="50"><span id="swingVal">50%</span></label><button id="reset">איפוס</button></section>
+<div id="lanes"></div><section id="status" role="status">מוכן</section>
+<p>לבדיקה: HH B = 4–6–4–6; SN = 4–4–4–4; KD = 2–2–2–2. אפשר לערוך חלוקת פעמה לכל תיבה בנפרד, גם לאחר הפיכת וריאציה לשתי תיבות. עריכת צעדים מותרת כשהנגן עצור.</p>
+<script src="variation-engine.js"></script><script>
+(()=>{
+const E=GrooveVariationEngine,$=id=>document.getElementById(id),names=['HH','SN','KD'],key='groove-lab-independent-test-v1';
+const seed=()=>names.map((name,r)=>Array.from({length:8},(_,i)=>{
+ const divisions=r===0&&i%2?[4,6,4,6]:r===2?[2,2,2,2]:[4,4,4,4];
+ const ticks=E.visibleTicks(divisions).filter((t,j)=>r===0?j%2===0:r===1?t===12||t===36:t===0||t===24);
+ return E.normalizeVariation({id:name+(i+1),name:'ABCDEFGH'[i],bars:[{divisions,notes:ticks.map(tick=>({tick}))}]},name);
+}));
+let banks;try{banks=E.deserializeBanks(localStorage.getItem(key))}catch(e){banks=seed()}
+let selected=[0,0,0],pending=[null,null,null],ctx=null,running=false,timer=null,next=0,cycle=0;
+const save=()=>{try{localStorage.setItem(key,E.serializeBanks(banks))}catch(e){}};
+const status=s=>{$('status').textContent=s};
+function draw(){
+ $('lanes').replaceChildren();
+ for(let r=0;r<3;r++){
+  const v=banks[r][selected[r]],section=document.createElement('section'),head=document.createElement('div');
+  const title=document.createElement('strong');title.textContent=names[r]+' · ';head.append(title);
+  for(let i=0;i<8;i++){
+   const b=document.createElement('button');b.textContent='ABCDEFGH'[i];b.className=(pending[r]===i||pending[r]===null&&selected[r]===i)?'selected':'';
+   b.style.padding='5px';b.onclick=()=>{if(running){pending[r]=i;status('המעבר ממתין למחזור הבא')}else selected[r]=i;draw()};head.append(b);
+  }
+  const len=document.createElement('button');len.textContent=v.bars.length+' תיבה/ות';len.onclick=()=>{
+   if(running){status('עצור כדי לערוך אורך');return}
+   if(v.bars.length===1)v.bars.push(JSON.parse(JSON.stringify(v.bars[0])));else v.bars.pop();save();draw();
+  };head.append(len);section.append(head);
+  v.bars.forEach((bar,bi)=>{
+   const wrap=document.createElement('div');wrap.className='bar';wrap.append(document.createTextNode('תיבה '+(bi+1)));
+   const beats=document.createElement('div');beats.className='beats';
+   for(let beat=0;beat<4;beat++){
+    const cell=document.createElement('div');cell.className='beat';
+    const select=document.createElement('select');
+    E.DIVISIONS.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;select.append(o)});select.value=bar.divisions[beat];
+    select.onchange=()=>{if(running){select.value=bar.divisions[beat];return}E.editDivision(banks,r,selected[r],bi,beat,Number(select.value));save();draw()};
+    cell.append(document.createTextNode(''+(beat+1)+' '),select);
+    const steps=document.createElement('div');steps.className='steps';steps.style.gridTemplateColumns='repeat('+bar.divisions[beat]+',minmax(0,1fr))';
+    E.visibleTicks(bar.divisions).filter(t=>Math.floor(t/12)===beat).forEach(tick=>{
+     const note=bar.notes.find(n=>n.tick===tick),button=document.createElement('button');
+     button.className=note?'on':'';button.textContent=note?'●':'·';button.title='tick '+tick;
+     button.onclick=()=>{if(running)return;if(note)bar.notes.splice(bar.notes.indexOf(note),1);else bar.notes.push({tick,velocity:'normal',articulation:'normal'});bar.notes.sort((a,b)=>a.tick-b.tick);save();draw()};
+     steps.append(button);
+    });cell.append(steps);beats.append(cell);
+   }
+   wrap.append(beats);
+   const extra=bar.notes.filter(n=>!E.eventIsOnGrid(n.tick,bar.divisions));
+   if(extra.length){const p=document.createElement('p');p.textContent='אירועים שמורים מחוץ לגריד: '+extra.map(n=>n.tick).join(', ');wrap.append(p)}
+   section.append(wrap);
+  });$('lanes').append(section);
+ }
+}
+function hit(e,t){
+ const osc=ctx.createOscillator(),g=ctx.createGain();osc.type=e.lane===0?'square':'triangle';
+ osc.frequency.value=[900,200,90][e.lane];const dur=[.025,.09,.15][e.lane];
+ g.gain.setValueAtTime(.13,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+ osc.connect(g);g.connect(ctx.destination);osc.start(t);osc.stop(t+dur+.002);
+}
+function schedule(){
+ if(!running)return;
+ while(next<ctx.currentTime+.12){
+  pending.forEach((p,r)=>{if(p!==null){selected[r]=p;pending[r]=null}});
+  const chosen=selected.map((i,r)=>banks[r][i]),quarter=60/Number($('bpm').value||80);
+  E.timeline(chosen,Number($('swing').value)/100).forEach(e=>hit(e,next+e.quarter*quarter));
+  next+=E.cycleBars(chosen)*4*quarter;cycle++;draw();status('מחזור '+cycle+' · '+E.cycleBars(chosen)+' תיבות');
+ }
+}
+$('play').onclick=async()=>{if(running)return;if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();await ctx.resume();running=true;next=ctx.currentTime+.10;cycle=0;schedule();timer=setInterval(schedule,25);$('play').disabled=true};
+$('stop').onclick=()=>{running=false;clearInterval(timer);timer=null;if(ctx){void ctx.close();ctx=null}$('play').disabled=false;status('נעצר')};
+$('reset').onclick=()=>{if(running)$('stop').click();banks=seed();selected=[0,0,0];pending=[null,null,null];save();draw();status('אופס')};
+$('swing').oninput=()=>{$('swingVal').textContent=$('swing').value+'%'};
+draw();
+})();
+</script>
