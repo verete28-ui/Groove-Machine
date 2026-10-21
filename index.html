@@ -478,7 +478,59 @@ $('independentSwitch').onchange=()=>{
 };
 let playingBar=0,shownBar=0;
 let scoreBarContext=0,scoreHost=null,scorePositionsByBar=[],scoreCursorsByBar=[];
+function scoreV2(){
+ const root=$('score');root.replaceChildren();scorePositionsByBar=[];scoreCursorsByBar=[];
+ const VF=window.Vex?.Flow;
+ if(!VF){$('scoreMsg').textContent='VexFlow אינו זמין';return}
+ let failures=0;
+ for(let bar=0;bar<cycleBars();bar++){
+  const wrap=document.createElement('div');wrap.className='score-bar-panel';wrap.dataset.bar=String(bar);
+  const heading=document.createElement('div');heading.className='score-bar-heading';heading.textContent='תיבה '+(bar+1);wrap.append(heading);
+  for(let r=0;r<3;r++){
+   const b=variationBar(r,bar),line=document.createElement('div');wrap.append(line);
+   try{
+    const width=680,renderer=new VF.Renderer(line,VF.Renderer.Backends.SVG);renderer.resize(width,112);
+    const context=renderer.getContext(),stave=new VF.Stave(42,19,width-65);
+    stave.addClef('percussion');stave.setContext(context).draw();
+    const notes=[],tuplets=[],beams=[];
+    for(let beat=0;beat<4;beat++){
+     const count=b.divisions[beat],duration=count<=3?'8':'16',group=[];
+     for(let i=0;i<count;i++){
+      const tick=beat*12+i*12/count,hit=b.notes.find(n=>n.tick===tick);
+      const note=new VF.StaveNote({clef:'percussion',keys:[hit?['g/5/x','c/5','f/4'][r]:'b/4'],duration:duration+(hit?'':'r'),stem_direction:1});
+      group.push(note);notes.push(note);
+     }
+     if(count===3)tuplets.push(new VF.Tuplet(group,{num_notes:3,notes_occupied:2,bracketed:true,ratioed:false}));
+     if(count===6)for(let i=0;i<6;i+=3)tuplets.push(new VF.Tuplet(group.slice(i,i+3),{num_notes:3,notes_occupied:2,bracketed:true,ratioed:false}));
+     // Beam only adjacent struck notes, separating groups to preserve rests.
+     for(let i=0;i<count;i+=count===4?2:count===6?3:count){
+      let segment=[];
+      const flush=()=>{if(segment.length>=2)beams.push(segment);segment=[]};
+      for(let j=i;j<Math.min(count,i+(count===4?2:count===6?3:count));j++){
+       const tick=beat*12+j*12/count;
+       if(b.notes.some(n=>n.tick===tick))segment.push(group[j]);else flush();
+      }
+      flush();
+     }
+    }
+    const voice=new VF.Voice({num_beats:4,beat_value:4});voice.addTickables(notes);
+    new VF.Formatter().joinVoices([voice]).format([voice],width-175);
+    voice.draw(context,stave);
+    beams.forEach(g=>new VF.Beam(g).setContext(context).draw());
+    tuplets.forEach(t=>t.setContext(context).draw());
+    const svg=line.querySelector('svg');if(svg){svg.setAttribute('viewBox','0 0 '+width+' 112');svg.setAttribute('width','100%');svg.setAttribute('height','auto');svg.style.width='100%';svg.style.height='auto'}
+    const label=document.createElement('span');label.className='small';label.textContent=['HH','SN','KD'][r]+' · '+b.divisions.join('–');wrap.insertBefore(label,line);
+   }catch(e){
+    failures++;console.warn('Independent score lane error',r,bar,e);
+    line.textContent=['HH','SN','KD'][r]+' · '+b.divisions.join('–')+' · '+b.notes.map(n=>n.tick).join(', ');
+   }
+  }
+  root.append(wrap);
+ }
+ $('scoreMsg').textContent=failures?'חלק מן התיווי לא זמין — מוצגים מיקומי המכות':'תיווי עצמאי לכל כלי · טריולות מסומנות במפורש';
+}
 function score(){
+ if(independentMode)return scoreV2();
  const root=$('score');root.replaceChildren();scorePositionsByBar=[];scoreCursorsByBar=[];
  for(let bar=0,total=cycleBars();bar<total;bar++){
   scoreBarContext=bar;
@@ -490,7 +542,55 @@ function score(){
  markScore(shownStep,shownBar);
 }
 let ctx,bus,running=false,timer=null,position=0,next=0,rev=0,shownStep=-1,scorePositions=[],scoreCursor=null;
+function seqV2(){
+ const host=$('seq');host.replaceChildren();$('beatControls').hidden=true;
+ for(let bar=0;bar<cycleBars();bar++){
+  const panel=document.createElement('div');panel.className=cycleBars()===2?'bar-panel':'single-bar';panel.dataset.bar=String(bar);
+  if(cycleBars()===2){const heading=document.createElement('div');heading.className='bar-head';heading.textContent='תיבה '+(bar+1);panel.append(heading)}
+  for(let r=0;r<3;r++){
+   const data=variationBar(r,bar),row=document.createElement('div');row.className='track'+(trackMuted[r]?' is-muted':'');
+   row.style.gridTemplateColumns='34px 34px repeat(4,minmax(0,1fr))';
+   const label=document.createElement('span');label.textContent=['HH','SN','KD'][r];row.append(label);
+   const mute=document.createElement('button');mute.className='mute';mute.textContent=trackMuted[r]?'🔇':'🔊';mute.onclick=()=>setTrackMute(r);row.append(mute);
+   for(let beat=0;beat<4;beat++){
+    const slice=document.createElement('div');slice.className='beat-slice';slice.style.gridTemplateColumns='repeat('+data.divisions[beat]+',minmax(0,1fr))';
+    const selector=document.createElement('select');selector.title='חלוקת פעמה '+(beat+1);selector.setAttribute('aria-label',['HH','SN','KD'][r]+' תיבה '+(bar+1)+' פעמה '+(beat+1));
+    selector.style.gridColumn='1 / -1';selector.style.width='100%';selector.style.fontSize='10px';selector.style.padding='1px';selector.style.background='#263a48';selector.style.color='white';
+    for(const n of E.DIVISIONS){const opt=document.createElement('option');opt.value=n;opt.textContent=n;selector.append(opt)}
+    selector.value=data.divisions[beat];
+    selector.onchange=()=>{
+     if(running){selector.value=data.divisions[beat];$('status').textContent='עצור את הנגינה כדי לערוך חלוקת פעמה';return}
+     E.editDivision(independentBanks,r,selected[r],bar%selectedV(r).bars.length,beat,Number(selector.value));
+     persistV();seq();score();
+    };
+    slice.append(selector);
+    E.visibleTicks(data.divisions).filter(t=>Math.floor(t/12)===beat).forEach(tick=>{
+     const note=data.notes.find(n=>n.tick===tick),b=document.createElement('button');b.dataset.step=String(tick);b.dataset.bar=String(bar);
+     b.className='step'+(note?' hit':'')+(r===1&&note?' '+(note.velocity||'normal'):'');
+     if(r===1&&note&&note.velocity!=='normal')b.textContent=note.velocity==='ghost'?'g':'>';
+     if(r===0&&note){
+      if(note.articulation!=='closed'&&note.articulation!=='normal'){b.classList.add('hat-'+note.articulation);b.textContent={half:'◐',open:'○',pedal:'×'}[note.articulation]||''}
+      if(note.velocity==='soft')b.classList.add('hat-soft');if(note.velocity==='accent')b.classList.add('hat-accent');
+     }
+     b.onclick=()=>{
+      if(r===0&&note)openHatEditor(tick,bar);
+      else if(r===1)openSnareEditor(tick,bar);
+      else toggleVariationNote(r,bar,tick);
+      if(r===0&&!note)toggleVariationNote(r,bar,tick);
+     };
+     slice.append(b);
+    });
+    const extra=data.notes.filter(n=>Math.floor(n.tick/12)===beat&&!E.eventIsOnGrid(n.tick,data.divisions));
+    if(extra.length){const span=document.createElement('span');span.style.gridColumn='1 / -1';span.className='small';span.textContent='+'+extra.length+' מחוץ לגריד';slice.append(span)}
+    row.append(slice);
+   }
+   panel.append(row);
+  }
+  host.append(panel);
+ }
+}
 function seq(){
+ if(independentMode)return seqV2();
  const host=$('seq');host.replaceChildren();
  const total=cycleBars();$('beatControls').hidden=total===2;
  for(let bar=0;bar<total;bar++){
