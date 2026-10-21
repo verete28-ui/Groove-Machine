@@ -53,11 +53,12 @@ function smokeGrooveCore({core,engine,machine}){
   close(){return Promise.resolve()}
  }
  const window={GROOVE_MACHINE:machine||null,GrooveVariationEngine:engine,AudioContext:MockAudioContext,Vex:null,addEventListener:(name,fn)=>{listeners[name]=fn}};
+ const loggedErrors=[];const logger={warn(...x){loggedErrors.push(x.map(String).join(' '))},error(...x){loggedErrors.push(x.map(String).join(' '))}};
  const urlSearchClass=class{constructor(){}get(){return null}};
  let phase='boot';
  try{
-  new Function('window','document','localStorage','location','navigator','setTimeout','setInterval','clearInterval','URLSearchParams',core)(
-   window,document,localStorage,{search:''},{},()=>{},fn=>{intervalCallback=fn;return 1},()=>{intervalCallback=null},urlSearchClass
+  new Function('window','document','localStorage','location','navigator','setTimeout','setInterval','clearInterval','URLSearchParams','console',core)(
+   window,document,localStorage,{search:''},{},()=>{},fn=>{intervalCallback=fn;return 1},()=>{intervalCallback=null},urlSearchClass,logger
   );
   phase='load';if(listeners.load)listeners.load();
   phase='activate';id('independentSwitch').checked=true;id('independentSwitch').onchange();
@@ -115,5 +116,5 @@ function smokeGrooveCore({core,engine,machine}){
   phase='return-to-legacy';id('independentSwitch').checked=false;id('independentSwitch').onchange();
   return {passed:true,steps:10,variationButtons:buttons.length,beatSelectors:selectors.length,storagePrefix:prefix,scheduledOscillators:first.length+second.length,preservedRhythmEvents:a.length,notationTuplets};
 
- }catch(e){return {passed:false,phase,error:String(e),stack:String(e.stack||'').slice(0,420)}}
+ }catch(e){return {passed:false,phase,error:String(e),stack:String(e.stack||'').slice(0,420),loggedErrors}}
 }
