@@ -334,8 +334,23 @@ function hatRowAt(bar=0){return bar===1&&variationLength(0)===2?(ensureSecond(0,
 // Migration reads currently active legacy grid, preserving all original localStorage keys.
 try{const saved=localStorage.getItem(newVariationKey);if(saved)independentBanks=E.deserializeBanks(saved)}
 catch(e){console.warn('Invalid independent state',e)}
+function archiveLegacyGrids(){
+ try{
+  const key=storagePrefix+'-legacy-grid-archive-v1';
+  if(localStorage.getItem(key))return;
+  const banks={straight:straightBanks,triplet:tripletBanks,triplet16:triplet16Banks,mixed:mixedBanks};
+  const snare={straight:straightSnareDynamics,triplet:tripletSnareDynamics,triplet16:triplet16SnareDynamics,mixed:mixedSnareDynamics};
+  const hats={straight:straightHatBanks,triplet:tripletHatBanks,triplet16:triplet16HatBanks,mixed:mixedHatBanks};
+  localStorage.setItem(key,JSON.stringify({
+   version:1,activeMode:rhythmGrid,banks,snare,hats,
+   mixedBeats:mixedBeats.slice(),secondMixedBeats:secondMixedBeats.slice(),
+   variationLengths:variationLengths.map(row=>row.slice()),secondBarData
+  }));
+ }catch(error){console.warn('Unable to archive legacy grids',error)}
+}
 function activateIndependent(){
  if(!independentBanks){
+  archiveLegacyGrids();
   independentBanks=E.migrateLegacy({mode:rhythmGrid,banks:instrumentBanks,labels:instrumentLabels,
    firstDivisions:beatDivisionsForBar(0),secondDivisions:beatDivisionsForBar(1),
    snareDynamics,hatBanks,lengths:variationLengths,second:secondData()});
@@ -346,10 +361,19 @@ function activateIndependent(){
 $('independentSwitch').onchange=()=>{
  if(running)stop();
  if($('independentSwitch').checked)activateIndependent();else independentMode=false;
+ try{localStorage.setItem(storagePrefix+'-independent-enabled-v1',String(independentMode))}catch(e){}
  $('rhythmGrid').disabled=independentMode;
  $('swingSetting').style.display=independentMode?'flex':rhythmGrid==='straight'?'flex':'none';
  paintVariations();seq();score();
 };
+try{
+ const query=new URLSearchParams(location.search);
+ const remembered=localStorage.getItem(storagePrefix+'-independent-enabled-v1')==='true';
+ if(remembered||query.get('independent')==='1'){
+  $('independentSwitch').checked=true;activateIndependent();$('rhythmGrid').disabled=true;
+  $('swingSetting').style.display='flex';
+ }
+}catch(error){console.warn('Could not restore independent engine mode',error)}
 let playingBar=0,shownBar=0;
 let scoreBarContext=0,scoreHost=null,scorePositionsByBar=[],scoreCursorsByBar=[];
 function scoreV2(){
