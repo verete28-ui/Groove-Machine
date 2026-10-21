@@ -99,6 +99,8 @@ function smokeGrooveCore({core,engine,machine}){
   if(!text)throw Error('Independent variation bank was not saved');
   const bank=engine.deserializeBanks(text);
   if(bank[0][5].bars[0].divisions[1]!==6)throw Error('Variation change was not stored');
+  const archived=JSON.parse(storage.get(prefix+'-legacy-grid-archive-v1')||'null');
+  if(!archived||!['straight','triplet','triplet16','mixed'].every(mode=>archived.banks?.[mode]?.length===3))throw Error('All four legacy grid banks were not backed up');
   phase='playback';id('soundKit').value='synth';id('drumsEnabled').checked=true;id('loop').checked=true;id('bpm').value='80';id('swing').value='50';
   buttons[4].onclick(); // H5: regular subdivision, snare/kick remain at A
   id('play').onclick();
