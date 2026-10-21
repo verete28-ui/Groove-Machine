@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>One Drop — Groove Lab</title>
+<title>One Drop — Groove Lab 3.5</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
@@ -64,19 +64,56 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .bar-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin:3px 0 7px}
 .bar-head .repeat-label{font-size:11px;color:#acc2ce}.bar-panel .beat-controls{margin-top:4px}
 .variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
+/* One Drop identity — page-local theme, shared engine unchanged */
+:root{background:#15231c;color:#f1f0df}
+body{background:#15231c;color:#f1f0df}
+.reggae-header{border-right:4px solid #c2a455;border-radius:8px;padding:12px 16px;background:linear-gradient(110deg,#294733,#182c23);margin-bottom:14px}
+.reggae-eyebrow{font-size:10px;letter-spacing:1.5px;color:#c5d0b6;font-weight:750;direction:ltr;text-align:right}
+.reggae-header h1{font-size:clamp(26px,6vw,36px);margin:5px 0;direction:ltr;text-align:right;font-weight:800;line-height:1.25}
+.reggae-tag{display:inline-block;vertical-align:middle;border:1px solid #d6bd75;color:#ebd499;border-radius:20px;font-size:10px;padding:5px 9px;margin-left:9px;letter-spacing:1px;white-space:nowrap}
+.reggae-subtitle{font-size:13px;color:#d4dcc8}
+.panel,.fold{background:#1e3228;border-color:#496956}
+button{background:#314b3a;border-color:#66836b;color:#f1f0df}
+button.active,.hat-choice-row button.chosen{background:#c6a54d;border-color:#e4c770;color:#19261c}
+.control-grid select,.beat-selectors select{background:#304b3b;border-color:#66836b;color:#f1f0df}
+.step{background:#344d3d}.step.hit{background:#d2ae55;color:#18261b}.step.accent{background:#dfc56e;color:#172319}
+.step.ghost{background:#537563}.track.is-muted .step.hit{background:#50685b}
+#snareEditor .editor-content,#hatEditor .editor-content{background:#20392c;border-color:#789076}
+@media(max-width:430px){.reggae-header{padding:12px}.reggae-tag{font-size:9px;padding:4px 7px}}
 
-html,:root,body,main{background:#050505;color:#f4f0e5}.reggae-header{padding:12px;border:2px solid #d3ac38;border-radius:12px;background:#111;margin-bottom:12px}.reggae-eyebrow{color:#d3ac38;font-size:10px;letter-spacing:1px}.reggae-subtitle{color:#dfd6b0;font-size:13px}.panel,.fold{background:#101010;border:2px solid #555}.transport.panel{border-color:#d3ac38}#settingsFold,#practiceFold{border-color:#c9443b}#variationsFold{border-color:#35965d}#clickFold{border-color:#d3ac38}section.panel{border-color:#35965d}button{background:#222;border-color:#777;color:#f4f0e5}button.active{background:#d3ac38;color:#111}.step{background:#292929}.step.hit{background:#35965d}.step.current{outline:2px solid #d3ac38}
+/* One Drop – black background and Rasta-colored section frames */
+html,:root,body,main{background:#050505;color:#f4f0e5}
+.reggae-header{background:#111;border:2px solid #e3bd37;border-right:5px solid #e3bd37}
+.panel,.fold{background:#101010;border:2px solid #4e4e4e}
+.transport.panel{border-color:#e3bd37}
+#settingsFold{border-color:#c9443b}
+#clickFold{border-color:#e3bd37}
+#variationsFold{border-color:#35965d}
+#practiceFold{border-color:#c9443b}
+section.panel{border-color:#35965d}
+#scoreWrap{border:2px solid #e3bd37;border-radius:10px;padding:10px;background:#101010}
+.fold .panel{border:0;background:transparent}
+button{background:#222;border-color:#6a6a6a;color:#f4f0e5}
+button.active,.hat-choice-row button.chosen{background:#d2ae46;color:#111;border-color:#e3bd37}
+.step{background:#292929}.step.hit{background:#35965d;color:#fff}
+.step.accent{background:#e3bd37;color:#111}
+.step.current{outline:2px solid #e3bd37}
+.control-grid select,.beat-selectors select{background:#222;border-color:#777;color:#f4f0e5}
+#snareEditor .editor-content,#hatEditor .editor-content{background:#141414;border-color:#e3bd37}
+
+
 </style>
 <main>
-<header class="reggae-header"><div><div class="reggae-eyebrow">GROOVE LAB / REGGAE SERIES · MACHINE 01</div><h1>One Drop</h1><div class="reggae-subtitle">Roots Reggae · מכונת לימוד רגאיי</div></div></header>
+<header class="reggae-header"><div><div class="reggae-eyebrow">GROOVE LAB / REGGAE SERIES · MACHINE 01</div><h1>One Drop <span class="reggae-tag">ROOTS REGGAE</span></h1><div class="reggae-subtitle">מכונת לימוד רגאיי · 4/4 · חלוקת פעמות עצמאית לכל וריאציה</div></div></header>
+<nav class="small" style="display:flex;gap:12px;flex-wrap:wrap;margin:7px 0 12px"><a style="color:#8edcf4" href="index.html?independent=1">Groove Lab · מנוע עצמאי</a><a style="color:#8edcf4" href="one-drop.html?independent=1">One Drop · מנוע עצמאי</a><a style="color:#8edcf4" href="variation-engine-demo.html">בדיקת ציר הזמן</a></nav>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
- <label>BPM <input type="range" id="bpm" min="40" max="180" value="100"><b id="bpmOut">100</b></label>
+ <label>BPM <input type="range" id="bpm" min="40" max="180" value="80"><b id="bpmOut">80</b></label>
  <label>חלוקת קצב <select id="rhythmGrid"><option value="straight">רגיל · 16 צעדים</option><option value="triplet">טריולות שמיניות · 12 צעדים</option><option value="triplet16">טריולות שש־עשריות · 24 צעדים</option><option value="mixed">משולב · חלוקה לכל פעמה</option></select></label>
 
- <label id="swingSetting">Swing <input type="range" id="swing" min="50" max="75" value="60" step="1"><b id="swingOut">60%</b></label>
- <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option><option value="avl">AVL Black Pearl · ניסיון</option><option value="salamanderReggae">Salamander · Reggae Resonance · ניסיון</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label id="reggaeReverbControl" hidden>רים־שוט · ריוורב <input type="range" id="reggaeReverb" min="0" max="100" step="5" value="45"><b id="reggaeReverbOut">45%</b></label><span id="reggaePreviewControl" hidden><button type="button" id="reggaeTestSnare">▶ סנר פתוח</button> <button type="button" id="reggaeTestRim">▶ רים + ריוורב</button></span><label><input id="loop" type="checkbox" checked> לופ</label>
+ <label id="swingSetting">Swing <input type="range" id="swing" min="50" max="75" value="50" step="1"><b id="swingOut">50%</b></label>
+ <label><input type="checkbox" id="independentSwitch"> חלוקה עצמאית לכל וריאציה</label><span class="small">גריד עצמאי: נגיעה קצרה מוסיפה/מסירה מכה; נגיעה ארוכה בסנר/היי־האט עורכת את הצליל. עריכה אפשרית גם בזמן נגינה.</span><label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option><option value="avl">AVL Black Pearl · ניסיון</option><option value="salamanderReggae">Salamander · Reggae Resonance · ניסיון</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label id="reggaeReverbControl" hidden>רים־שוט · ריוורב <input type="range" id="reggaeReverb" min="0" max="100" step="5" value="45"><b id="reggaeReverbOut">45%</b></label><span id="reggaePreviewControl" hidden><button type="button" id="reggaeTestSnare">▶ סנר פתוח</button> <button type="button" id="reggaeTestRim">▶ רים + ריוורב</button></span><label><input id="loop" type="checkbox" checked> לופ</label>
  <button id="reset">איפוס וריאציות פעילות</button>
 </div></details>
 <details class="fold" id="clickFold">
@@ -129,5 +166,7 @@ html,:root,body,main{background:#050505;color:#f4f0e5}.reggae-header{padding:12p
 <button data-snare-level="off">– · ללא מכה</button>
 <button id="closeSnareEditor">סגור</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
-<script src="./machines/one-drop-preview.js?v=h5-h6-1"></script>
-<script src="./engine/groove-v34-preview.js"></script><p class="small" style="margin:15px 0"><a href="salamander-browser.html" style="color:#8edcf4;font-weight:700">🥁 דפדפן סאמפלים של Salamander (536 הקלטות)</a> · <a href="reggae-sample-test.html" style="color:#8edcf4">בדיקת סנר ורים + ריוורב</a> · <a href="snare-audition.html" style="color:#8edcf4">השוואת סנרים AVL</a> · <a href="kick-audition.html" style="color:#8edcf4">השוואת קיקים AVL</a> · <a href="hihat-audition.html" style="color:#8edcf4">השוואת היי־האט AVL</a></p><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת. Salamander Reggae Resonance — דגימות Salamander עם ריוורב בזמן אמת. AVL Black Pearl — <a style="color:#8edcf4" href="https://github.com/studiorack/avl-drumkits" target="_blank" rel="noopener">Glen MacArthur / AVL Drumkits</a>, CC BY-SA 3.0, קובצי FLAC מקוריים ללא עיבוד.</p></main></html>
+<script src="variation-engine.js"></script>
+<script src="machines/one-drop.js"></script>
+<script src="engine/groove-core.js"></script>
+<p class="small" style="margin:15px 0"><a href="salamander-browser.html" style="color:#8edcf4;font-weight:700">🥁 דפדפן סאמפלים של Salamander (536 הקלטות)</a> · <a href="reggae-sample-test.html" style="color:#8edcf4">בדיקת סנר ורים + ריוורב</a> · <a href="snare-audition.html" style="color:#8edcf4">השוואת סנרים AVL</a> · <a href="kick-audition.html" style="color:#8edcf4">השוואת קיקים AVL</a> · <a href="hihat-audition.html" style="color:#8edcf4">השוואת היי־האט AVL</a></p><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת. Salamander Reggae Resonance — דגימות Salamander עם ריוורב בזמן אמת. AVL Black Pearl — <a style="color:#8edcf4" href="https://github.com/studiorack/avl-drumkits" target="_blank" rel="noopener">Glen MacArthur / AVL Drumkits</a>, CC BY-SA 3.0, קובצי FLAC מקוריים ללא עיבוד.</p></main></html>
