@@ -1,12 +1,12 @@
 <!doctype html>
-<html data-one-drop-release="update-check-1" lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>One Drop — Groove Lab</title>
 <style>
 :root{font-family:system-ui;background:#101821;color:#eef5fa}*{box-sizing:border-box}body{margin:0;padding:12px}main{max-width:850px;margin:auto}
 header,.line,.transport{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}h1{font-size:22px}
 button{background:#263a48;color:inherit;border:1px solid #507084;border-radius:9px;padding:10px;cursor:pointer;font:inherit}
 button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#182630;border-radius:12px;padding:12px;margin:12px 0}
-.hide{display:none!important}
+.hide{display:none!important}[hidden]{display:none!important}
 .fold{border:1px solid #455a67;background:#182630;border-radius:12px;margin:10px 0;overflow:hidden}
 .fold summary{cursor:pointer;list-style:none;padding:13px 12px;display:flex;align-items:center;justify-content:space-between;font-weight:650;touch-action:manipulation}
 .fold summary::-webkit-details-marker{display:none}
@@ -39,80 +39,36 @@ button.active{background:#087d9a} .panel{border:1px solid #455a67;background:#18
 .beat-selectors select{background:#263a48;color:#fff;border:1px solid #507084;border-radius:7px;padding:5px 2px;width:100%;font-size:12px}
 .beat-slice{display:grid;min-width:0;gap:2px}
 .beat-slice .step{min-width:0}
+.bar-panel{border:1px solid #54707d;border-radius:10px;padding:7px 4px;margin:8px 0;min-width:0}.bar-panel.is-active{border:2px solid #2bb5cc;background:#19333d}
+.bar-panel .track{margin:8px 0}.bar-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin:3px 0 7px}.repeat-label{font-size:11px;color:#acc2ce}
+
 .beat-slice{position:relative}.off-grid{position:absolute;top:100%;left:0;padding:1px 4px;background:#aa6731;border:0;border-radius:5px;font-size:10px;min-height:14px;z-index:2}
 .track:has(.off-grid){margin-bottom:24px}
 .beats{display:grid;grid-template-columns:71px repeat(16,minmax(0,1fr));gap:3px;direction:ltr;text-align:center;font-size:11px;color:#b0c4d0}
+.score-bar-panel{border:1px solid #71818a;border-radius:9px;padding:5px;margin-bottom:10px;overflow:hidden}.score-bar-panel.is-active{border:2px solid #25b5cf}.score-bar-heading{direction:rtl;font-size:12px;font-weight:700;margin:0 3px 3px;color:#394854}
 #score{direction:ltr;overflow:hidden;background:#fff;color:#17212a;border-radius:8px;min-height:0;width:100%}#score svg{display:block;width:100%;height:auto;max-width:100%}
-.variations{display:flex;flex-direction:column;gap:7px;margin:10px 0}.variation-row{display:grid;grid-template-columns:52px repeat(4,minmax(0,1fr));gap:5px;align-items:center;direction:ltr}.variation-row>span{font-size:12px;font-weight:600;grid-row:span 2}.variations button{min-width:0;padding:6px 2px;line-height:1.2;min-height:44px}.variations button .vlabel{display:block;font-size:10px;font-weight:400;margin-top:3px;opacity:.85}.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
+.variations{display:flex;flex-direction:column;gap:7px;margin:9px 0}
+.variation-row{display:grid;grid-template-columns:30px repeat(8,minmax(0,1fr));gap:4px;align-items:center;direction:ltr}
+.variation-row>span{font-size:11px;font-weight:700}
+.variations button{min-width:0;line-height:1.1}
+.variations button .vlabel{display:none}
+.variation-cell{min-width:0}
+.variation-cell>.variation-btn{width:100%;min-height:39px;padding:4px 0 3px;font-size:13px;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.variation-cell .variation-marker{display:block;font-size:10px;line-height:11px;font-weight:700;opacity:.88;margin-top:3px}
+@media (min-width:540px){.variation-row{grid-template-columns:36px repeat(8,minmax(0,1fr));gap:6px}.variation-cell>.variation-btn{min-height:44px}.variations button .vlabel{display:block;font-size:9px;font-weight:400;margin-top:2px;opacity:.8}}
+#lengthEditor{position:fixed;inset:0;background:#000a;z-index:25;display:flex;justify-content:center;align-items:center;padding:16px}
+#lengthEditor[hidden]{display:none}
+#lengthEditor .editor-content{background:#20323e;border:1px solid #628096;border-radius:14px;width:min(330px,100%);padding:16px;display:grid;gap:10px}
+#lengthEditor .choice{width:100%;text-align:right}.choice.is-selected{background:#087d9a;border-color:#44c5d9}
+.bar-panel{border:1px solid #54707d;border-radius:10px;padding:7px 5px;margin:8px 0;min-width:0}.bar-panel.is-active{border:2px solid #2bb5cc;background:#19333d}.bar-panel .track{margin:10px 0}
+.bar-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin:3px 0 7px}
+.bar-head .repeat-label{font-size:11px;color:#acc2ce}.bar-panel .beat-controls{margin-top:4px}
+.variations button.pending{border-color:#efc14b;box-shadow:inset 0 0 0 1px #efc14b}.variations button.active{background:#087d9a}.small{font-size:12px;color:#afc0cc}input[type=range]{accent-color:#24abd0;max-width:180px}
 
-/* One Drop identity — page-local theme, shared engine unchanged */
-:root{background:#15231c;color:#f1f0df}
-body{background:#15231c;color:#f1f0df}
-.reggae-header{border-right:4px solid #c2a455;border-radius:8px;padding:12px 16px;background:linear-gradient(110deg,#294733,#182c23);margin-bottom:14px}
-.reggae-eyebrow{font-size:10px;letter-spacing:1.5px;color:#c5d0b6;font-weight:750;direction:ltr;text-align:right}
-.reggae-header h1{font-size:clamp(26px,6vw,36px);margin:5px 0;direction:ltr;text-align:right;font-weight:800;line-height:1.25}
-.reggae-tag{display:inline-block;vertical-align:middle;border:1px solid #d6bd75;color:#ebd499;border-radius:20px;font-size:10px;padding:5px 9px;margin-left:9px;letter-spacing:1px;white-space:nowrap}
-.reggae-subtitle{font-size:13px;color:#d4dcc8}
-.panel,.fold{background:#1e3228;border-color:#496956}
-button{background:#314b3a;border-color:#66836b;color:#f1f0df}
-button.active,.hat-choice-row button.chosen{background:#c6a54d;border-color:#e4c770;color:#19261c}
-.control-grid select,.beat-selectors select{background:#304b3b;border-color:#66836b;color:#f1f0df}
-.step{background:#344d3d}.step.hit{background:#d2ae55;color:#18261b}.step.accent{background:#dfc56e;color:#172319}
-.step.ghost{background:#537563}.track.is-muted .step.hit{background:#50685b}
-#snareEditor .editor-content,#hatEditor .editor-content{background:#20392c;border-color:#789076}
-@media(max-width:430px){.reggae-header{padding:12px}.reggae-tag{font-size:9px;padding:4px 7px}}
-
-/* One Drop – black background and Rasta-colored section frames */
-html,:root,body,main{background:#050505;color:#f4f0e5}
-.reggae-header{background:#111;border:2px solid #e3bd37;border-right:5px solid #e3bd37}
-.panel,.fold{background:#101010;border:2px solid #4e4e4e}
-.transport.panel{border-color:#e3bd37}
-#settingsFold{border-color:#c9443b}
-#clickFold{border-color:#e3bd37}
-#variationsFold{border-color:#35965d}
-#practiceFold{border-color:#c9443b}
-section.panel{border-color:#35965d}
-#scoreWrap{border:2px solid #e3bd37;border-radius:10px;padding:10px;background:#101010}
-.fold .panel{border:0;background:transparent}
-button{background:#222;border-color:#6a6a6a;color:#f4f0e5}
-button.active,.hat-choice-row button.chosen{background:#d2ae46;color:#111;border-color:#e3bd37}
-.step{background:#292929}.step.hit{background:#35965d;color:#fff}
-.step.accent{background:#e3bd37;color:#111}
-.step.current{outline:2px solid #e3bd37}
-.control-grid select,.beat-selectors select{background:#222;border-color:#777;color:#f4f0e5}
-#snareEditor .editor-content,#hatEditor .editor-content{background:#141414;border-color:#e3bd37}
-
+html,:root,body,main{background:#050505;color:#f4f0e5}.reggae-header{padding:12px;border:2px solid #d3ac38;border-radius:12px;background:#111;margin-bottom:12px}.reggae-eyebrow{color:#d3ac38;font-size:10px;letter-spacing:1px}.reggae-subtitle{color:#dfd6b0;font-size:13px}.panel,.fold{background:#101010;border:2px solid #555}.transport.panel{border-color:#d3ac38}#settingsFold,#practiceFold{border-color:#c9443b}#variationsFold{border-color:#35965d}#clickFold{border-color:#d3ac38}section.panel{border-color:#35965d}button{background:#222;border-color:#777;color:#f4f0e5}button.active{background:#d3ac38;color:#111}.step{background:#292929}.step.hit{background:#35965d}.step.current{outline:2px solid #d3ac38}
 </style>
 <main>
-<header class="reggae-header"><div><div class="reggae-eyebrow">GROOVE LAB / REGGAE SERIES · MACHINE 01</div><h1>One Drop <span class="reggae-tag">ROOTS REGGAE</span></h1><div class="reggae-subtitle">מכונת לימוד רגאיי · 4/4 · תיבה אחת · כולל טריולות</div></div></header>
-
-<!-- One Drop: unobtrusive update check, no interruption to playback -->
-<style>
-#updateNotice{position:sticky;top:6px;z-index:15;display:none;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;margin:6px 0;background:#192b1b;border:1px solid #d5ae42;border-radius:9px;font-size:13px}
-#updateNotice button{background:#d5ae42;color:#111;font-weight:700;white-space:nowrap}
-</style>
-<div id="updateNotice" role="status"><span>יש גרסה חדשה של One Drop</span><button id="applyUpdate" type="button">עדכן עכשיו</button></div>
-<script>
-(()=> {
-const initial=document.documentElement.getAttribute('data-one-drop-release');
-const notice=document.getElementById('updateNotice');
-const button=document.getElementById('applyUpdate');
-button.addEventListener('click',()=>{const url=new URL(location.href);url.searchParams.set('updated',Date.now().toString());location.replace(url.toString())});
-async function check(){
- if(document.visibilityState==='hidden')return;
- try{
-  const response=await fetch('./one-drop.html?check='+Date.now(),{cache:'no-store'});
-  if(!response.ok)return;
-  const text=await response.text();
-  const version=text.match(/<html[^>]*data-one-drop-release="([^"]+)"/)?.[1];
-  if(version&&version!==initial)notice.style.display='flex';
- }catch(_){}
-}
-window.addEventListener('focus',check);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')check()});
-setInterval(check,30000);
-})();
-</script>
+<header class="reggae-header"><div><div class="reggae-eyebrow">GROOVE LAB / REGGAE SERIES · MACHINE 01</div><h1>One Drop</h1><div class="reggae-subtitle">Roots Reggae · מכונת לימוד רגאיי</div></div></header>
 <div class="transport panel"><div><button id="play" class="active">▶ נגן</button> <button id="stop">■ עצור</button></div><span id="status" class="small">מוכן</span></div>
 <details class="fold" id="settingsFold"><summary>⚙ קצב והגדרות</summary>
 <div class="fold-body control-grid">
@@ -120,7 +76,7 @@ setInterval(check,30000);
  <label>חלוקת קצב <select id="rhythmGrid"><option value="straight">רגיל · 16 צעדים</option><option value="triplet">טריולות שמיניות · 12 צעדים</option><option value="triplet16">טריולות שש־עשריות · 24 צעדים</option><option value="mixed">משולב · חלוקה לכל פעמה</option></select></label>
 
  <label id="swingSetting">Swing <input type="range" id="swing" min="50" max="75" value="60" step="1"><b id="swingOut">60%</b></label>
- <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label><input id="loop" type="checkbox" checked> לופ</label>
+ <label>ערכת צלילים <select id="soundKit"><option value="acoustic">Acoustic HD · Salamander</option><option value="studio">Studio · סמפלים</option><option value="dub">Vintage / Dub</option><option value="synth">Synth · מקורי</option><option value="avl">AVL Black Pearl · ניסיון</option><option value="salamanderReggae">Salamander · Reggae Resonance · ניסיון</option></select></label><span class="small" id="sampleStatus" role="status">הסמפלים נטענים בעת הצורך</span><label id="reggaeReverbControl" hidden>רים־שוט · ריוורב <input type="range" id="reggaeReverb" min="0" max="100" step="5" value="45"><b id="reggaeReverbOut">45%</b></label><span id="reggaePreviewControl" hidden><button type="button" id="reggaeTestSnare">▶ סנר פתוח</button> <button type="button" id="reggaeTestRim">▶ רים + ריוורב</button></span><label><input id="loop" type="checkbox" checked> לופ</label>
  <button id="reset">איפוס וריאציות פעילות</button>
 </div></details>
 <details class="fold" id="clickFold">
@@ -134,10 +90,19 @@ setInterval(check,30000);
 <details class="fold" id="variationsFold" open>
 <summary>וריאציות לפי כלי</summary>
 <div class="fold-body">
- <div class="small">A–H לכל כלי · מעבר בתחילת התיבה הבאה</div>
+ <div class="small">A–H לכל כלי · לחיצה רגילה לבחירה, ארוכה לשינוי אורך · Ⅰ תיבה אחת / Ⅱ שתי תיבות</div>
  <div class="variations" id="variations" dir="ltr"></div>
  <div class="line"><span class="small" id="variationStatus">HH A · SN A · KD A</span><div style="display:flex;gap:6px;flex-wrap:wrap"><button id="randomize" title="בחירת שילוב אקראי של היי־האט, סנר ובס">🎲 רנדומייז</button><button id="copyVar" title="העתקת וריאציית כלי ליעד אחר באותו כלי">העתק כלי…</button></div></div>
 </div></details>
+<div id="lengthEditor" hidden role="dialog" aria-modal="true" aria-labelledby="lengthEditorTitle">
+ <div class="editor-content">
+  <strong id="lengthEditorTitle">אורך וריאציה</strong>
+  <span class="small">בחר את אורך הווריאציה. שינוי זה לא מוחק את התיבה השנייה.</span>
+  <button class="choice" data-var-length="1">Ⅰ · תיבה אחת</button>
+  <button class="choice" data-var-length="2">Ⅱ · שתי תיבות</button>
+  <button id="lengthEditorClose">סגור</button>
+ </div>
+</div>
 <details class="fold" id="practiceFold" open><summary>🥁 תרגול — סיקוונסר / תווים</summary><div class="fold-body">
 <div class="line" style="margin:0 0 12px 0"><span class="small">סאונד התופים</span><label class="small" style="display:flex;align-items:center;gap:7px"><input type="checkbox" id="drumsEnabled" checked> 🔊 הפעל תופים</label></div>
 <div class="tabs"><button class="active" data-view="seq">סיקוונסר</button><button data-view="score">תווים</button></div>
@@ -164,5 +129,5 @@ setInterval(check,30000);
 <button data-snare-level="off">– · ללא מכה</button>
 <button id="closeSnareEditor">סגור</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
-<script src="./machines/one-drop.js?v=h2-spang-20261020"></script>
-<script src="./engine/groove-core.js"></script><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת.</p></main></html>
+<script src="./machines/one-drop-preview.js?v=tlb-live-1"></script>
+<script src="./engine/groove-v34-preview.js"></script><p class="small" style="margin:15px 0"><a href="salamander-browser.html" style="color:#8edcf4;font-weight:700">🥁 דפדפן סאמפלים של Salamander (536 הקלטות)</a> · <a href="reggae-sample-test.html" style="color:#8edcf4">בדיקת סנר ורים + ריוורב</a> · <a href="snare-audition.html" style="color:#8edcf4">השוואת סנרים AVL</a> · <a href="kick-audition.html" style="color:#8edcf4">השוואת קיקים AVL</a> · <a href="hihat-audition.html" style="color:#8edcf4">השוואת היי־האט AVL</a></p><p class="small">קרדיט: Acoustic HD — <a style="color:#8edcf4" href="https://github.com/studiorack/salamander-drumkit" target="_blank" rel="noopener">Salamander Drumkit</a>, Alexander Holm, CC BY-SA 3.0. Studio / Vintage — <a style="color:#8edcf4" href="https://github.com/teropa/drumkit" target="_blank" rel="noopener">teropa/drumkit</a>, מקורות Freesound תחת CC BY / CC0 כמתואר במקור. Vintage הוא עיבוד בזמן אמת. Salamander Reggae Resonance — דגימות Salamander עם ריוורב בזמן אמת. AVL Black Pearl — <a style="color:#8edcf4" href="https://github.com/studiorack/avl-drumkits" target="_blank" rel="noopener">Glen MacArthur / AVL Drumkits</a>, CC BY-SA 3.0, קובצי FLAC מקוריים ללא עיבוד.</p></main></html>
