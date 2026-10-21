@@ -534,3 +534,39 @@ try {
   }
  }catch(e){console.warn('H5/H6 migration',e)}
 })();
+
+
+/* Restore accepted H1-H4 independent patterns v2 */
+(function(){
+ const E=window.GrooveVariationEngine,machine=window.GROOVE_MACHINE;
+ if(!E||!machine)return;
+ const prefix=machine.storagePrefix,bankKey=prefix+'-variation-objects-v1',flag=prefix+'-restore-h1-h4-v2';
+ const h=(tick,articulation='closed')=>({tick,velocity:'normal',articulation});
+ const variation=(id,name,bars)=>E.normalizeVariation({id,name,bars:bars.map(({ticks,open=[]})=>({
+  divisions:[4,4,4,4],notes:ticks.map(t=>h(t,open.includes(t)?'open':'closed'))
+ }))},'HH');
+ const presets=[
+  variation('HH1','Stir It Up · שמיניות',[{ticks:[0,6,12,18,24,30,36,42]}]),
+  variation('HH2','Spang-a-lang ישר',[{ticks:[0,12,18,24,36,42]}]),
+  variation('HH3','Three Little Birds · קל',[{ticks:[0,12,24,30,36],open:[12]},{ticks:[0,12,24,30,36],open:[36]}]),
+  variation('HH4','Three Little Birds · מלא',[{ticks:[0,6,12,24,30,36,42],open:[12]},{ticks:[0,12,24,30,36],open:[36]}])
+ ];
+ machine.labels[0].splice(0,4,...presets.map(v=>v.name));
+ const restore=()=>{
+  if(localStorage.getItem(flag)==='done')return true;
+  const data=localStorage.getItem(bankKey);if(!data)return false;
+  const banks=E.deserializeBanks(data);
+  // Keep complete snapshot before correcting the first four hi-hat variations.
+  const backupKey=prefix+'-before-h1-h4-restore-v2';
+  if(!localStorage.getItem(backupKey))localStorage.setItem(backupKey,data);
+  for(let i=0;i<4;i++)banks[0][i]=presets[i];
+  localStorage.setItem(bankKey,E.serializeBanks(banks));
+  localStorage.setItem(flag,'done');
+  return true;
+ };
+ try {
+  if(!restore())window.addEventListener('load',()=>{
+   try{if(restore())location.reload()}catch(e){console.warn('Restore H1-H4',e)}
+  },{once:true});
+ }catch(e){console.warn('Restore H1-H4',e)}
+})();
