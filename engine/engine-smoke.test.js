@@ -102,22 +102,47 @@ function smokeGrooveCore({core,engine,machine}){
   const archived=JSON.parse(storage.get(prefix+'-legacy-grid-archive-v1')||'null');
   if(!archived||!['straight','triplet','triplet16','mixed'].every(mode=>archived.banks?.[mode]?.length===3))throw Error('All four legacy grid banks were not backed up');
   phase='playback';id('soundKit').value='synth';id('drumsEnabled').checked=true;id('loop').checked=true;id('bpm').value='80';id('swing').value='50';
-  buttons[4].onclick(); // H5: regular subdivision, snare/kick remain at A
+  buttons[4].onclick(); // H5: current pattern; SN and KD remain at variation A
   id('play').onclick();
-  if(!activeContext||oscillatorEvents.length===0)throw Error('Audio scheduler did not emit any events');
-  const first=oscillatorEvents.slice(),quarter=.75;
-  phase='queued H5-H6';buttons[5].onclick(); // H6: one beat edited to 6 subdivisions
-  if(!intervalCallback)throw Error('Scheduler interval absent');
-  activeContext.currentTime=103.01;intervalCallback();
-  const second=oscillatorEvents.slice(first.length);
-  if(!second.length)throw Error('No second-cycle audio events');
-  const offsets=events=>events.filter(e=>e.frequency===145||e.frequency===170)
-   .map(e=>({frequency:e.frequency,offset:Math.round(((e.time-100.05)%3+3)%3*1000)}))
+  if(!activeContext||!intervalCallback)throw Error('Web Audio scheduler was not initialized');
+  // Advance one beat at a time to mirror the 90ms lookahead scheduler.
+  function advance(time){activeContext.currentTime=time;intervalCallback()}
+  for(const time of [100.81,101.56,102.31])advance(time);
+  const first=oscillatorEvents.filter(e=>e.time>=100.05&&e.time<103.05);
+  const beat=0.75;
+  phase='queued H5-H6';buttons[5].onclick(); // change HH only at next phrase boundary
+  advance(103.06); // now the next phrase begins; HH H6 is selected
+  // A step can be added or removed during playback.
+  phase='live-step-edit';
+  const allNodes=(start,predicate)=>{
+   const result=[];
+   const walk=n=>{if(!n||typeof n!=='object')return;if(predicate(n))result.push(n);for(const c of n.children||[])walk(c)};
+   walk(start);return result;
+  };
+  const snSteps=allNodes(id('seq'),n=>n.tag==='button'&&n.dataset.step==='36');
+  if(snSteps.length<3)throw Error('Cannot find editable sequencer steps');
+  const bankBefore=engine.deserializeBanks(storage.get((machine?.storagePrefix||'groove-lab')+'-variation-objects-v1'));
+  const snBefore=bankBefore[1][0].bars[0].notes.length;
+  snSteps[1].onclick();
+  const bankAfter=engine.deserializeBanks(storage.get((machine?.storagePrefix||'groove-lab')+'-variation-objects-v1'));
+  if(bankAfter[1][0].bars[0].notes.length===snBefore)throw Error('Live step edit did not persist');
+  snSteps[1].onclick(); // the old button references same tick; restore original snare pattern
+  phase='live-division-edit';
+  const liveSelectors=allNodes(id('seq'),n=>n.tag==='select');
+  if(liveSelectors.length!==12)throw Error('Missing live subdivision controls');
+  liveSelectors[0].value='2';liveSelectors[0].onchange();
+  const liveBank=engine.deserializeBanks(storage.get((machine?.storagePrefix||'groove-lab')+'-variation-objects-v1'));
+  if(liveBank[0][5].bars[0].divisions[0]!==2)throw Error('Live subdivision edit was rejected');
+  for(const time of [103.81,104.56,105.31])advance(time);
+  const second=oscillatorEvents.filter(e=>e.time>=103.05&&e.time<106.05);
+  const offsets=(events,origin)=>events.filter(e=>e.frequency===145||e.frequency===170)
+   .map(e=>({frequency:e.frequency,offset:Math.round((e.time-origin)*1000)}))
    .sort((a,b)=>a.frequency-b.frequency||a.offset-b.offset);
-  const a=offsets(first),b=offsets(second);
-  if(JSON.stringify(a)!==JSON.stringify(b))throw Error('Snare/kick offsets changed during H5-H6 switch: '+JSON.stringify({a,b}));
+  const a=offsets(first,100.05),b=offsets(second,103.05);
+  if(a.length===0||JSON.stringify(a)!==JSON.stringify(b))
+   throw Error('Snare/kick timing changed during H5→H6 + live editing: '+JSON.stringify({a,b}));
   phase='return-to-legacy';id('independentSwitch').checked=false;id('independentSwitch').onchange();
-  return {passed:true,steps:10,variationButtons:buttons.length,beatSelectors:selectors.length,storagePrefix:prefix,scheduledOscillators:first.length+second.length,preservedRhythmEvents:a.length,notationTuplets};
+  return {passed:true,steps:10,variationButtons:buttons.length,beatSelectors:selectors.length,storagePrefix:prefix,scheduledOscillators:first.length+second.length,preservedRhythmEvents:a.length,liveEditing:true,notationTuplets};
 
  }catch(e){return {passed:false,phase,error:String(e),stack:String(e.stack||'').slice(0,420),loggedErrors}}
 }
