@@ -469,6 +469,24 @@ function score(){
  markScore(shownStep,shownBar);
 }
 let ctx,bus,running=false,timer=null,position=0,next=0,rev=0,shownStep=-1,scorePositions=[],scoreCursor=null;
+function attachV2StepEditor(button,r,bar,tick){
+ // Quick tap adds/removes a hit; long touch/right-click opens its articulation editor.
+ let hold=null,handled=false;
+ const cancel=()=>{if(hold!==null){clearTimeout(hold);hold=null}};
+ const edit=()=>{handled=true;if(r===0)openHatEditor(tick,bar);else if(r===1)openSnareEditor(tick,bar)};
+ if(r<2){
+  button.addEventListener('pointerdown',event=>{
+   if(event.button!==0)return;
+   handled=false;cancel();hold=setTimeout(()=>{hold=null;edit()},480);
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(type=>button.addEventListener(type,cancel));
+  button.addEventListener('contextmenu',event=>{event.preventDefault();cancel();edit()});
+ }
+ button.onclick=()=>{
+  if(handled){handled=false;return}
+  toggleVariationNote(r,bar,tick);
+ };
+}
 function seqV2(){
  const host=$('seq');host.replaceChildren();$('beatControls').hidden=true;
  for(let bar=0;bar<cycleBars();bar++){
@@ -486,9 +504,9 @@ function seqV2(){
     for(const n of E.DIVISIONS){const opt=document.createElement('option');opt.value=n;opt.textContent=n;selector.append(opt)}
     selector.value=data.divisions[beat];
     selector.onchange=()=>{
-     if(running){selector.value=data.divisions[beat];$('status').textContent='עצור את הנגינה כדי לערוך חלוקת פעמה';return}
      E.editDivision(independentBanks,r,selected[r],bar%selectedV(r).bars.length,beat,Number(selector.value));
      persistV();seq();score();
+     if(running)$('status').textContent='החלוקה עודכנה · תתנגן בפעמה הבאה שלא תוזמנה';
     };
     slice.append(selector);
     E.visibleTicks(data.divisions).filter(t=>Math.floor(t/12)===beat).forEach(tick=>{
@@ -499,12 +517,8 @@ function seqV2(){
       if(note.articulation!=='closed'&&note.articulation!=='normal'){b.classList.add('hat-'+note.articulation);b.textContent={half:'◐',open:'○',pedal:'×'}[note.articulation]||''}
       if(note.velocity==='soft')b.classList.add('hat-soft');if(note.velocity==='accent')b.classList.add('hat-accent');
      }
-     b.onclick=()=>{
-      if(r===0&&note)openHatEditor(tick,bar);
-      else if(r===1)openSnareEditor(tick,bar);
-      else toggleVariationNote(r,bar,tick);
-      if(r===0&&!note)toggleVariationNote(r,bar,tick);
-     };
+     b.title=['היי־האט','סנר','קיק'][r]+' · לחיצה: הוסף/הסר; לחיצה ארוכה: ערוך';
+     attachV2StepEditor(b,r,bar,tick);
      slice.append(b);
     });
     const extra=data.notes.filter(n=>Math.floor(n.tick/12)===beat&&!E.eventIsOnGrid(n.tick,data.divisions));
@@ -1143,7 +1157,7 @@ function mark(s,bar=shownBar){
  $('seq').querySelectorAll('.bar-panel').forEach(node=>node.classList.toggle('is-active',Number(node.dataset.bar)===bar));
  markScore(s,bar);
 }
-function stop(){running=false;applyQueuedBeatDivisions();playingBar=0;shownBar=0;activeOpenHats=[];pending=[null,null,null];paintVariations();rev++;clearInterval(timer);timer=null;position=0;mark(-1);$('play').textContent='▶ נגן';$('status').textContent='מוכן';if(ctx){bus.gain.setTargetAtTime(0,ctx.currentTime,.008);bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination);if(reggaeWet){reggaeWet.disconnect();reggaeWet.connect(bus)}}}
+function stop(){running=false;v2BeatIndex=0;applyQueuedBeatDivisions();playingBar=0;shownBar=0;activeOpenHats=[];pending=[null,null,null];paintVariations();rev++;clearInterval(timer);timer=null;position=0;mark(-1);$('play').textContent='▶ נגן';$('status').textContent='מוכן';if(ctx){bus.gain.setTargetAtTime(0,ctx.currentTime,.008);bus=ctx.createGain();bus.gain.value=.45;bus.connect(ctx.destination);if(reggaeWet){reggaeWet.disconnect();reggaeWet.connect(bus)}}}
 function soundV2(e,t){
  if(!$('drumsEnabled').checked||trackMuted[e.lane])return;
  const kit=$('soundKit').value,recorded=kit!=='synth';
@@ -1165,42 +1179,66 @@ function soundV2(e,t){
   if((!recorded||!sampleHit('kd',t,kit,velocity))&&kit!=='avl'&&kit!=='salamanderReggae')tone(t,145,.24,.85,43);
  }
 }
+// Independent mode schedules ONE quarter at a time, not a full 1–2-bar loop.
+// Edits (including beat subdivisions) are reflected in the next unscheduled beat.
+// Variation changes still enter at the next full phrase boundary.
+let v2BeatIndex=0;
 function tickV2(){
  if(!running)return;
  const revision=rev;
  while(next<ctx.currentTime+.09&&running){
-  applyPendingVariations();
+  if(v2BeatIndex===0){
+   applyPendingVariations();
+   chokeHats(next);
+  }
   const variations=E.compose(independentBanks,selected);
-  const quarters=60/Number($('bpm').value),swing=Number($('swing').value)/100;
-  const events=E.timeline(variations,swing),total=E.cycleBars(variations);
-  chokeHats(next);
-  for(const event of events){
-   const at=next+event.quarter*quarters;
+  const total=E.cycleBars(variations);
+  const absoluteBeat=v2BeatIndex%(total*4),bar=Math.floor(absoluteBeat/4),beat=absoluteBeat%4;
+  const quarter=60/Number($('bpm').value),swing=Number($('swing').value)/100;
+  const beatEvents=[];
+  variations.forEach((variation,lane)=>{
+   const notes=E.eventsForBar(variation,bar,swing);
+   notes.forEach(event=>{
+    // Swing can shift internal duple notes, but never across beat boundaries.
+    if(Math.floor(event.beatTime+1e-9)===beat)
+     beatEvents.push({...event,lane});
+   });
+  });
+  beatEvents.sort((a,b)=>a.beatTime-b.beatTime||a.lane-b.lane);
+  const marked=new Set();
+  for(const event of beatEvents){
+   const at=next+(event.beatTime-beat)*quarter;
    soundV2(event,at);
+   if(!marked.has(event.tick)){
+    marked.add(event.tick);
+    setTimeout(()=>{if(running&&rev===revision){
+     mark(event.tick,bar);
+     $('status').textContent='תיבה '+(bar+1)+' · פעמה '+(beat+1);
+    }},Math.max(0,(at-ctx.currentTime)*1000));
+   }
+  }
+  // Even a fully silent beat advances the visual cursor and the metronome.
+  if(!beatEvents.length){
+   const at=next;
+   setTimeout(()=>{if(running&&rev===revision){
+    mark(beat*12,bar);
+    $('status').textContent='תיבה '+(bar+1)+' · פעמה '+(beat+1);
+   }},Math.max(0,(at-ctx.currentTime)*1000));
   }
   if($('metro').checked){
    const division=Number($('clickDivision').value),perBeat=division===4?1:division===2?2:4;
-   for(let bar=0;bar<total;bar++)for(let beat=0;beat<4;beat++)for(let j=0;j<perBeat;j++){
-    const at=next+(bar*4+beat+j/perBeat)*quarters;
-    metronomeClick(at,$('clickAccent').checked&&bar===0&&beat===0&&j===0,Number($('clickVolume').value)/100);
+   for(let i=0;i<perBeat;i++)
+    metronomeClick(next+i*quarter/perBeat,$('clickAccent').checked&&bar===0&&beat===0&&i===0,Number($('clickVolume').value)/100);
+  }
+  next+=quarter;
+  v2BeatIndex++;
+  if(v2BeatIndex>=total*4){
+   v2BeatIndex=0;
+   if(!$('loop').checked){
+    clearInterval(timer);timer=null;
+    setTimeout(()=>{if(rev===revision)stop()},Math.max(0,(next-ctx.currentTime)*1000));
+    break;
    }
-  }
-  const unique=new Set();
-  for(const event of events){
-   const k=event.bar+':'+event.tick;
-   if(unique.has(k))continue;
-   unique.add(k);
-   const at=next+event.quarter*quarters;
-   setTimeout(()=>{if(running&&rev===revision){
-    mark(event.tick,event.bar);
-    $('status').textContent='תיבה '+(event.bar+1)+' · פעמה '+(Math.floor(event.tick/12)+1);
-   }},Math.max(0,(at-ctx.currentTime)*1000));
-  }
-  next+=total*4*quarters;
-  if(!$('loop').checked){
-   clearInterval(timer);timer=null;
-   setTimeout(()=>{if(rev===revision)stop()},Math.max(0,(next-ctx.currentTime)*1000));
-   break;
   }
  }
 }
@@ -1236,7 +1274,7 @@ function tick(){
   }
  }
 }
-$('play').onclick=()=>{if(running){stop();return}if(!init())return;running=true;rev++;position=0;playingBar=0;shownBar=0;next=ctx.currentTime+.05;$('play').textContent='Ⅱ השהה';tick();timer=setInterval(tick,20)};
+$('play').onclick=()=>{if(running){stop();return}if(!init())return;running=true;rev++;position=0;v2BeatIndex=0;playingBar=0;shownBar=0;next=ctx.currentTime+.05;$('play').textContent='Ⅱ השהה';tick();timer=setInterval(tick,20)};
 $('stop').onclick=stop;
 $('bpm').oninput=()=>{$('bpmOut').textContent=$('bpm').value};
 $('soundKit').onchange=()=>{
