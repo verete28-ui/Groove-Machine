@@ -1,0 +1,77 @@
+{
+  "machine": "one-drop",
+  "source": "Three Little Birds — screenshot bars 37–38 supplied by user",
+  "status": "draft; not activated until shared two-bar engine integration",
+  "unit": "eighth-note slots per bar, indices 0..7 (1,&,2,&,3,&,4,&)",
+  "patterns": [
+    {
+      "id": "H3",
+      "name": "Three Little Birds — simplified",
+      "bars": [
+        {
+          "hits": [
+            0,
+            2,
+            4,
+            6
+          ],
+          "open": [
+            6
+          ],
+          "accent": []
+        },
+        {
+          "hits": [
+            0,
+            2,
+            3,
+            4,
+            6
+          ],
+          "open": [
+            3
+          ],
+          "accent": []
+        }
+      ]
+    },
+    {
+      "id": "H4",
+      "name": "Three Little Birds — transcription-inspired",
+      "bars": [
+        {
+          "hits": [
+            0,
+            2,
+            4,
+            5,
+            6
+          ],
+          "open": [
+            6
+          ],
+          "accent": []
+        },
+        {
+          "hits": [
+            0,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "open": [
+            3
+          ],
+          "accent": [
+            4,
+            6
+          ]
+        }
+      ]
+    }
+  ],
+  "notes": "Positions reconstructed from screenshot; review by ear before calling H4 exact transcription. Both patterns require independent two-bar cycle and hat articulation."
+}
