@@ -1473,7 +1473,7 @@ $('copyVar').onclick=()=>{
 };
 $('hatEditor').querySelectorAll('[data-hat-type]').forEach(b=>b.onclick=()=>changeHat('type',b.dataset.hatType));
 $('hatEditor').querySelectorAll('[data-hat-level]').forEach(b=>b.onclick=()=>changeHat('level',b.dataset.hatLevel));
-$('hatRemove').onclick=()=>{if(editedHatStep!==null){patternFor(0,editedHatBar)[editedHatStep]=false;saveVariations();saveSecond();closeHatEditor();seq();score()}};
+$('hatRemove').onclick=()=>{if(editedHatStep!==null){if(independentMode){const notes=variationBar(0,editedHatBar).notes,index=notes.findIndex(n=>n.tick===editedHatStep);if(index>=0)notes.splice(index,1);persistV()}else{patternFor(0,editedHatBar)[editedHatStep]=false;saveVariations();saveSecond()}closeHatEditor();seq();score()}};
 $('closeHatEditor').onclick=closeHatEditor;
 $('hatEditor').onclick=e=>{if(e.target===$('hatEditor'))closeHatEditor()};
 $('snareEditor').querySelectorAll('[data-snare-level]').forEach(b=>b.onclick=()=>assignSnareLevel(b.dataset.snareLevel));
