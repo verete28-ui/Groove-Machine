@@ -54,7 +54,7 @@ Launch the development pages with `?independent=1` to enable the new engine auto
 - `https://raw.githack.com/verete28-ui/Groove-Machine/feature/per-variation-subdivision-engine/one-drop.html?independent=1`
 - `https://raw.githack.com/verete28-ui/Groove-Machine/feature/per-variation-subdivision-engine/variation-engine-demo.html`
 
-The **new mode** is accessible through the 'חלוקה עצמאית לכל וריאציה' checkbox, persists across visits, and disables the legacy global subdivision selector. In the new sequencer every instrument has four independent beat-division selectors **per bar**; stop playback to edit beat divisions. Variation switching during playback takes effect at the beginning of the next complete cycle.
+The **new mode** is accessible through the 'חלוקה עצמאית לכל וריאציה' checkbox, persists across visits, and disables the legacy global subdivision selector. In the new sequencer every instrument has four independent beat-division selectors **per bar**; beat divisions and hits can now be edited during playback: short tap toggles a step, long press on HH/SN opens articulation/dynamics, and division selectors apply to the next unscheduled quarter. Variation switching during playback takes effect at the beginning of the next complete cycle.
 
 Suggested regression: set HH variation H5 to 4-4-4-4, H6 to 4-6-4-6; set SN to 4-4-4-4 and KD to 2-2-2-2. Switch H5→H6 while looping and confirm the underlying SN/KD times and their variation selection stay unchanged. Set HH length to two bars and verify one-bar SN/KD repeat in bar two. Test swing on duple beats and triplets on odd divisions. Then test real drum samples, closed/open hi-hat choking, meter, long-press length editing and VexFlow SVG on Android.
 
@@ -69,3 +69,9 @@ Suggested regression: set HH variation H5 to 4-4-4-4, H6 to 4-6-4-6; set SN to 4
 ## Scope boundary
 
 No changes were made to One Drop H5/H6 song-specific notes, hats or instructional material. Those can be corrected separately, using this engine's new variation object schema.
+
+## Live-sequencer correction (21 October 2026)
+- Quick touch on any instrument step toggles the hit; long-press or right-click on snare/hi-hat opens the dynamics/articulation editor.
+- Subdivision selectors and step edits no longer require Stop. Changes persist immediately, and sound reflects edits from the next unscheduled beat.
+- The experimental audio scheduler plans **one quarter note at a time** instead of scheduling the whole one-/two-bar phrase at once. Queued A–H transitions still apply at the next complete phrase boundary.
+- Both machine smoke tests now cover mid-playback note and subdivision changes, followed by H5→H6, and assert unchanged snare/kick event times. Real-device audible and VexFlow visual verification remain outstanding.
