@@ -1,0 +1,129 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Groove Lab | Salamander Sample Browser</title><style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0e141a;color:#eff6f8;font-family:system-ui,Arial,sans-serif;padding:12px}
+main{max-width:810px;margin:auto}h1{font-size:22px;margin:14px 0 5px}p{color:#b8cbd5;font-size:13px;line-height:1.5}a{color:#9bdef5}
+.panel{padding:12px;border-radius:12px;background:#1b2932;border:1px solid #344d58;margin:10px 0}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}.controls label{display:grid;gap:4px;font-size:12px;color:#cde2ed}.controls .wide{grid-column:span 2}
+select,input[type=search]{width:100%;background:#101e27;color:#f2f7fa;border:1px solid #526d7b;border-radius:8px;padding:10px;font-size:15px}
+input[type=range]{width:100%;accent-color:#28b3d0}button{background:#1d7895;color:#fff;border:1px solid #58b9ce;border-radius:9px;padding:9px 11px;cursor:pointer;font-size:14px;font-weight:600;touch-action:manipulation}button:disabled{opacity:.35}
+.list{display:grid;gap:6px}.sample{display:flex;align-items:center;gap:9px;justify-content:space-between;padding:10px;border:1px solid #364c56;border-radius:10px;min-width:0;background:#152129}
+.sample.is-playing{border-color:#efbb4b;background:#302b20}.name{min-width:0;font-size:13px;overflow-wrap:anywhere;direction:ltr;text-align:left}.sub{font-size:11px;color:#a5bbc7;margin-top:3px;direction:rtl;text-align:right}
+.sample button{min-width:76px;flex-shrink:0}.pager{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0}.status{min-height:42px;border-radius:8px;padding:10px;background:#273842;font-size:13px;color:#e3f3f9}
+.tiny{font-size:12px;color:#b1c5cf}.row{display:flex;align-items:center;gap:12px}.muted{color:#b0c6d1}
+</style></head><body><main>
+<h1>🥁 דפדפן הסאמפלים של Salamander</h1>
+<p>כל <strong>536</strong> קובצי ה־FLAC המקוריים, כולל סוגי הקיק, הסנר, ההיי־האט והמצילות שלא נמצאים עדיין במכונה. הכל מושמע כפי שהוקלט, בלי סינתזה, ריוורב או פילטר. שתי הדגימות הבאות נטענות מראש אחרי השמעה.</p>
+<div class="panel controls">
+<label>קבוצת כלים<select id="family"><option value="">כל הכלים</option><option value="kick">קיקים</option><option value="snare">סנרים</option><option value="hihat">היי־האט</option><option value="tom">טומים</option><option value="ride">רייד</option><option value="crash">קראש</option><option value="china">צ'יינה</option><option value="splash">ספלאש</option><option value="cowbell">קאובל</option><option value="bellchime">Bell Chime</option></select></label>
+<label>עוצמת ההקלטה<select id="dynamics"><option value="">כל העוצמות</option><option value="PP">חלש מאוד · PP</option><option value="P">חלש · P</option><option value="MP">בינוני חלש · MP</option><option value="Ghost">Ghost</option><option value="F">חזק · F</option><option value="FF">חזק מאוד · FF</option></select></label>
+<label class="wide">חיפוש לפי שם קובץ<input id="search" type="search" placeholder="לדוגמה: kick2, snareStick, SemiOpen3" autocomplete="off"></label>
+<label class="wide">עוצמת האזנה (לא משנה את הדגימה)<div class="row"><input id="volume" type="range" min="10" max="120" value="90" step="5"><output id="volval">90%</output></div></label>
+</div>
+<div class="panel"><div class="row" style="justify-content:space-between"><strong id="count"></strong><span class="tiny">לחץ ▶ להשמעה</span></div>
+<div id="list" class="list" style="margin-top:10px"></div>
+<div class="pager"><button id="prev">הקודם</button><span id="page" class="tiny"></span><button id="next">הבא</button></div></div>
+<div id="status" class="status" role="status" aria-live="polite">בחר סאמפל כדי להשמיע. בפעם הראשונה ייתכן שייקח רגע לטעון אותו.</div>
+<p class="muted">קבצים מקוריים: <a href="https://github.com/studiorack/salamander-drumkit/tree/master/Samples" target="_blank" rel="noopener">Salamander Drumkit</a> · קרדיט Alexander Holm · CC BY-SA 3.0. הדפדפן אינו שומר דגימות או מעלה קבצים שלך.</p>
+</main><script>
+(()=>{
+const filenames=["bellchime_F_1.flac","bellchime_F_2.flac","bellchime_F_3.flac","china1_OH_FF_1.flac","china1_OH_FF_2.flac","china1_OH_FF_3.flac","china1_OH_FF_4.flac","china1_OH_FF_5.flac","china1_OH_FF_6.flac","china1_OH_FF_7.flac","china1_OH_FF_8.flac","china1Choke_OH_F_1.flac","china2_OH_FF_1.flac","china2_OH_FF_2.flac","china2_OH_FF_3.flac","china2_OH_FF_4.flac","china2_OH_FF_5.flac","china2_OH_FF_6.flac","china2Choke_OH_F_1.flac","cowbell_FF_1.flac","cowbell_FF_2.flac","cowbell_FF_3.flac","cowbell_FF_4.flac","cowbell_FF_5.flac","cowbell_FF_6.flac","cowbell_FF_7.flac","cowbell_FF_8.flac","cowbell_FF_9.flac","cowbell_MP_1.flac","cowbell_MP_2.flac","cowbell_MP_3.flac","cowbell_MP_4.flac","cowbell_MP_5.flac","cowbell_MP_6.flac","cowbell_MP_7.flac","cowbell_MP_8.flac","cowbell_MP_9.flac","cowbell_P_1.flac","cowbell_P_2.flac","cowbell_P_3.flac","cowbell_P_4.flac","cowbell_P_5.flac","cowbell_P_6.flac","cowbell_P_7.flac","cowbell_P_8.flac","cowbell_P_9.flac","cowbell_P_10.flac","cowbell_P_11.flac","crash1_OH_FF_1.flac","crash1_OH_FF_2.flac","crash1_OH_FF_3.flac","crash1_OH_FF_4.flac","crash1_OH_FF_5.flac","crash1_OH_FF_6.flac","crash1_OH_P_1.flac","crash1_OH_P_2.flac","crash1_OH_P_3.flac","crash1_OH_P_4.flac","crash1_OH_P_5.flac","crash1Choke_OH_F_1.flac","crash2_OH_FF_1.flac","crash2_OH_FF_2.flac","crash2_OH_FF_3.flac","crash2_OH_FF_4.flac","crash2_OH_FF_5.flac","crash2_OH_FF_6.flac","crash2_OH_FF_7.flac","crash2_OH_FF_8.flac","crash2_OH_P_1.flac","crash2_OH_P_2.flac","crash2_OH_P_3.flac","crash2_OH_P_4.flac","crash2Choke_OH_F_1.flac","crash3_OH_FF_1.flac","crash3_OH_FF_2.flac","crash3_OH_FF_3.flac","crash3_OH_FF_4.flac","crash3_OH_FF_5.flac","crash3_OH_FF_6.flac","crash3_OH_FF_7.flac","crash3_OH_FF_8.flac","hihatClosed_OH_F_1.flac","hihatClosed_OH_F_2.flac","hihatClosed_OH_F_3.flac","hihatClosed_OH_F_4.flac","hihatClosed_OH_F_5.flac","hihatClosed_OH_F_6.flac","hihatClosed_OH_F_7.flac","hihatClosed_OH_F_8.flac","hihatClosed_OH_F_9.flac","hihatClosed_OH_F_10.flac","hihatClosed_OH_F_11.flac","hihatClosed_OH_F_12.flac","hihatClosed_OH_F_13.flac","hihatClosed_OH_F_14.flac","hihatClosed_OH_F_15.flac","hihatClosed_OH_F_16.flac","hihatClosed_OH_F_17.flac","hihatClosed_OH_F_18.flac","hihatClosed_OH_F_19.flac","hihatClosed_OH_F_20.flac","hihatClosed_OH_P_1.flac","hihatClosed_OH_P_2.flac","hihatClosed_OH_P_3.flac","hihatClosed_OH_P_4.flac","hihatClosed_OH_P_5.flac","hihatClosed_OH_P_6.flac","hihatClosed_OH_P_7.flac","hihatClosed_OH_P_8.flac","hihatClosed_OH_P_9.flac","hihatClosed_OH_P_10.flac","hihatClosed_OH_P_11.flac","hihatClosed_OH_P_12.flac","hihatClosed_OH_P_13.flac","hihatClosed_OH_P_14.flac","hihatClosed_OH_P_15.flac","hihatClosed_OH_P_16.flac","hihatClosed_OH_P_17.flac","hihatClosed_OH_P_18.flac","hihatClosed_OH_P_19.flac","hihatClosed_OH_P_20.flac","hihatFoot_OH_MP_1.flac","hihatFoot_OH_MP_2.flac","hihatFoot_OH_MP_3.flac","hihatFoot_OH_MP_4.flac","hihatFoot_OH_MP_5.flac","hihatFoot_OH_MP_6.flac","hihatFoot_OH_MP_7.flac","hihatFoot_OH_MP_8.flac","hihatFoot_OH_MP_9.flac","hihatFoot_OH_MP_10.flac","hihatFoot_OH_MP_11.flac","hihatFoot_OH_MP_12.flac","hihatFootStomp_OH_MP_1.flac","hihatFootStomp_OH_MP_2.flac","hihatFootStomp_OH_MP_3.flac","hihatFootStomp_OH_MP_4.flac","hihatOpen_OH_F_1.flac","hihatOpen_OH_F_2.flac","hihatOpen_OH_F_3.flac","hihatOpen_OH_F_4.flac","hihatOpen_OH_F_5.flac","hihatOpen_OH_FF_1.flac","hihatOpen_OH_FF_2.flac","hihatOpen_OH_FF_3.flac","hihatOpen_OH_FF_4.flac","hihatOpen_OH_FF_5.flac","hihatOpen_OH_FF_6.flac","hihatOpen_OH_P_1.flac","hihatOpen_OH_P_2.flac","hihatOpen_OH_P_3.flac","hihatOpen_OH_P_4.flac","hihatOpen_OH_P_5.flac","hihatOpen_OH_P_6.flac","hihatOpen_OH_P_7.flac","hihatSemiOpen1_OH_F_1.flac","hihatSemiOpen1_OH_F_2.flac","hihatSemiOpen1_OH_F_3.flac","hihatSemiOpen1_OH_F_4.flac","hihatSemiOpen1_OH_F_5.flac","hihatSemiOpen1_OH_P_.flac","hihatSemiOpen1_OH_P_1.flac","hihatSemiOpen1_OH_P_2.flac","hihatSemiOpen1_OH_P_3.flac","hihatSemiOpen1_OH_P_4.flac","hihatSemiOpen1_OH_P_5.flac","hihatSemiOpen2_OH_F_1.flac","hihatSemiOpen2_OH_F_2.flac","hihatSemiOpen2_OH_F_3.flac","hihatSemiOpen2_OH_F_4.flac","hihatSemiOpen2_OH_F_5.flac","hihatSemiOpen2_OH_P_1.flac","hihatSemiOpen2_OH_P_2.flac","hihatSemiOpen2_OH_P_3.flac","hihatSemiOpen2_OH_P_4.flac","hihatSemiOpen2_OH_P_5.flac","hihatSemiOpen3_OH_F_1.flac","hihatSemiOpen3_OH_F_2.flac","hihatSemiOpen3_OH_F_3.flac","hihatSemiOpen3_OH_F_4.flac","hihatSemiOpen3_OH_F_5.flac","hihatSemiOpen3_OH_P_1.flac","hihatSemiOpen3_OH_P_2.flac","hihatSemiOpen3_OH_P_3.flac","hihatSemiOpen3_OH_P_4.flac","hihatSemiOpen3_OH_P_5.flac","hihatSemiOpen4_OH_F_1.flac","hihatSemiOpen4_OH_F_2.flac","hihatSemiOpen4_OH_F_3.flac","hihatSemiOpen4_OH_F_4.flac","hihatSemiOpen4_OH_F_5.flac","hihatSemiOpen4_OH_P_1.flac","hihatSemiOpen4_OH_P_2.flac","hihatSemiOpen4_OH_P_3.flac","hihatSemiOpen4_OH_P_4.flac","hihatSemiOpen4_OH_P_5.flac","hihatSemiOpen5_OH_F_1.flac","hihatSemiOpen5_OH_F_2.flac","hihatSemiOpen5_OH_F_3.flac","hihatSemiOpen5_OH_F_4.flac","hihatSemiOpen5_OH_F_5.flac","hihatSemiOpen5_OH_P_1.flac","hihatSemiOpen5_OH_P_2.flac","hihatSemiOpen5_OH_P_3.flac","hihatSemiOpen5_OH_P_4.flac","hihatSemiOpen5_OH_P_5.flac","hihatSemiOpen6_OH_F_1.flac","hihatSemiOpen6_OH_F_2.flac","hihatSemiOpen6_OH_F_3.flac","hihatSemiOpen6_OH_F_4.flac","hihatSemiOpen6_OH_F_5.flac","hihatSemiOpen6_OH_P_1.flac","hihatSemiOpen6_OH_P_2.flac","hihatSemiOpen6_OH_P_3.flac","hihatSemiOpen6_OH_P_4.flac","hihatSemiOpen6_OH_P_5.flac","hihatSemiOpen7_OH_F_1.flac","hihatSemiOpen7_OH_F_2.flac","hihatSemiOpen7_OH_F_3.flac","hihatSemiOpen7_OH_F_4.flac","hihatSemiOpen7_OH_F_5.flac","hihatSemiOpen7_OH_P_1.flac","hihatSemiOpen7_OH_P_2.flac","hihatSemiOpen7_OH_P_3.flac","hihatSemiOpen7_OH_P_4.flac","hihatSemiOpen7_OH_P_5.flac","hiTom_OH_F_1.flac","hiTom_OH_F_2.flac","hiTom_OH_F_3.flac","hiTom_OH_F_4.flac","hiTom_OH_F_5.flac","hiTom_OH_F_6.flac","hiTom_OH_F_7.flac","hiTom_OH_F_8.flac","hiTom_OH_F_9.flac","hiTom_OH_F_10.flac","hiTom_OH_FF_1.flac","hiTom_OH_FF_2.flac","hiTom_OH_FF_3.flac","hiTom_OH_FF_4.flac","hiTom_OH_FF_5.flac","hiTom_OH_FF_6.flac","hiTom_OH_FF_7.flac","hiTom_OH_FF_8.flac","hiTom_OH_FF_9.flac","hiTom_OH_FF_10.flac","hiTom_OH_FF_11.flac","hiTom_OH_FF_12.flac","hiTom_OH_P_1.flac","hiTom_OH_P_2.flac","hiTom_OH_P_3.flac","hiTom_OH_P_4.flac","hiTom_OH_P_5.flac","hiTom_OH_P_6.flac","hiTom_OH_P_7.flac","hiTom_OH_P_8.flac","hiTom_OH_P_9.flac","kick_OH_F_1.flac","kick_OH_F_2.flac","kick_OH_F_3.flac","kick_OH_F_4.flac","kick_OH_F_5.flac","kick_OH_F_6.flac","kick_OH_F_7.flac","kick_OH_F_8.flac","kick_OH_F_9.flac","kick_OH_F_10.flac","kick_OH_F_11.flac","kick_OH_FF_1.flac","kick_OH_FF_2.flac","kick_OH_FF_3.flac","kick_OH_FF_4.flac","kick_OH_FF_5.flac","kick_OH_FF_6.flac","kick_OH_FF_7.flac","kick_OH_FF_8.flac","kick_OH_FF_9.flac","kick_OH_FF_10.flac","kick_OH_FF_11.flac","kick_OH_FF_12.flac","kick_OH_P_1.flac","kick_OH_P_2.flac","kick_OH_P_3.flac","kick_OH_P_4.flac","kick_OH_P_5.flac","kick_OH_P_6.flac","kick_OH_P_7.flac","kick_OH_P_8.flac","kick_OH_P_9.flac","kick2_OH_F_1.flac","kick2_OH_F_2.flac","kick2_OH_F_3.flac","kick2_OH_F_4.flac","kick2_OH_F_5.flac","kick2_OH_F_6.flac","kick2_OH_F_7.flac","kick2_OH_F_8.flac","kick2_OH_F_9.flac","kick2_OH_F_10.flac","kick2_OH_F_11.flac","kick2_OH_FF_1.flac","kick2_OH_FF_2.flac","kick2_OH_FF_3.flac","kick2_OH_FF_4.flac","kick2_OH_FF_5.flac","kick2_OH_FF_6.flac","kick2_OH_FF_7.flac","kick2_OH_FF_8.flac","kick2_OH_FF_9.flac","kick2_OH_FF_10.flac","kick2_OH_FF_11.flac","kick2_OH_FF_12.flac","kick2_OH_P_1.flac","kick2_OH_P_2.flac","kick2_OH_P_3.flac","kick2_OH_P_4.flac","kick2_OH_P_5.flac","kick2_OH_P_6.flac","kick2_OH_P_7.flac","kick2_OH_P_8.flac","kick2_OH_P_9.flac","loTom_OH_FF_1.flac","loTom_OH_FF_2.flac","loTom_OH_FF_3.flac","loTom_OH_FF_4.flac","loTom_OH_FF_5.flac","loTom_OH_FF_6.flac","loTom_OH_FF_7.flac","loTom_OH_FF_8.flac","loTom_OH_MP_1.flac","loTom_OH_MP_2.flac","loTom_OH_MP_3.flac","loTom_OH_MP_4.flac","loTom_OH_MP_5.flac","loTom_OH_MP_6.flac","loTom_OH_MP_7.flac","loTom_OH_MP_8.flac","loTom_OH_MP_9.flac","loTom_OH_MP_10.flac","loTom_OH_PP_1.flac","loTom_OH_PP_2.flac","loTom_OH_PP_3.flac","loTom_OH_PP_4.flac","loTom_OH_PP_5.flac","loTom_OH_PP_6.flac","ride1_OH_FF_1.flac","ride1_OH_FF_2.flac","ride1_OH_FF_3.flac","ride1_OH_FF_4.flac","ride1_OH_MP_1.flac","ride1_OH_MP_2.flac","ride1_OH_MP_3.flac","ride1_OH_MP_4.flac","ride1_OH_MP_5.flac","ride1_OH_MP_6.flac","ride1_OH_MP_7.flac","ride1_OH_MP_8.flac","ride1Bell_OH_F_1.flac","ride1Bell_OH_F_2.flac","ride1Bell_OH_F_3.flac","ride1Bell_OH_F_4.flac","ride1Bell_OH_F_5.flac","ride1Bell_OH_F_6.flac","ride2_OH_FF_1.flac","ride2_OH_FF_2.flac","ride2_OH_FF_3.flac","ride2_OH_FF_4.flac","ride2_OH_FF_5.flac","ride2_OH_MP_1.flac","ride2_OH_MP_2.flac","ride2_OH_MP_3.flac","ride2_OH_MP_4.flac","ride2_OH_MP_5.flac","ride2_OH_MP_6.flac","ride2_OH_MP_7.flac","ride2_OH_MP_8.flac","ride2_OH_PP_1.flac","ride2_OH_PP_2.flac","ride2_OH_PP_3.flac","ride2_OH_PP_4.flac","ride2Bell_OH_F_1.flac","ride2Bell_OH_F_2.flac","ride2Bell_OH_F_3.flac","ride2Bell_OH_F_4.flac","ride2Bell_OH_F_5.flac","ride2Bell_OH_F_6.flac","ride2Crash_OH_FF_1.flac","ride2Crash_OH_FF_2.flac","ride2Crash_OH_FF_3.flac","ride2Crash_OH_FF_4.flac","ride2Crash_OH_FF_5.flac","ride2Crash_OH_FF_6.flac","ride2Crash_OH_MP_1.flac","ride2Crash_OH_MP_2.flac","ride2Crash_OH_MP_3.flac","ride2CrashChoke_OH_F_1.flac","snare_OH_F_1.flac","snare_OH_F_2.flac","snare_OH_F_3.flac","snare_OH_F_4.flac","snare_OH_F_5.flac","snare_OH_F_6.flac","snare_OH_F_7.flac","snare_OH_F_8.flac","snare_OH_F_9.flac","snare_OH_F_10.flac","snare_OH_F_11.flac","snare_OH_F_12.flac","snare_OH_FF_1.flac","snare_OH_FF_2.flac","snare_OH_FF_3.flac","snare_OH_FF_4.flac","snare_OH_FF_5.flac","snare_OH_FF_6.flac","snare_OH_FF_7.flac","snare_OH_FF_8.flac","snare_OH_FF_9.flac","snare_OH_Ghost_1.flac","snare_OH_Ghost_2.flac","snare_OH_Ghost_3.flac","snare_OH_Ghost_4.flac","snare_OH_Ghost_5.flac","snare_OH_Ghost_6.flac","snare_OH_Ghost_7.flac","snare_OH_Ghost_8.flac","snare_OH_Ghost_9.flac","snare_OH_Ghost_10.flac","snare_OH_MP_1.flac","snare_OH_MP_2.flac","snare_OH_MP_3.flac","snare_OH_MP_4.flac","snare_OH_MP_5.flac","snare_OH_MP_6.flac","snare_OH_MP_7.flac","snare_OH_MP_8.flac","snare_OH_MP_9.flac","snare_OH_MP_10.flac","snare_OH_MP_11.flac","snare_OH_MP_12.flac","snare_OH_MP_13.flac","snare_OH_MP_14.flac","snare2_OH_F_1.flac","snare2_OH_F_2.flac","snare2_OH_F_3.flac","snare2_OH_F_4.flac","snare2_OH_F_5.flac","snare2_OH_F_6.flac","snare2_OH_F_7.flac","snare2_OH_F_8.flac","snare2_OH_F_9.flac","snare2_OH_F_10.flac","snare2_OH_F_11.flac","snare2_OH_F_12.flac","snare2_OH_FF_1.flac","snare2_OH_FF_2.flac","snare2_OH_FF_3.flac","snare2_OH_FF_4.flac","snare2_OH_FF_5.flac","snare2_OH_FF_6.flac","snare2_OH_FF_7.flac","snare2_OH_FF_8.flac","snare2_OH_Ghost_1.flac","snare2_OH_Ghost_2.flac","snare2_OH_Ghost_3.flac","snare2_OH_Ghost_4.flac","snare2_OH_Ghost_5.flac","snare2_OH_Ghost_6.flac","snare2_OH_Ghost_7.flac","snare2_OH_Ghost_8.flac","snare2_OH_Ghost_9.flac","snare2_OH_Ghost_10.flac","snare2_OH_MP_1.flac","snare2_OH_MP_2.flac","snare2_OH_MP_3.flac","snare2_OH_MP_4.flac","snare2_OH_MP_5.flac","snare2_OH_MP_6.flac","snare2_OH_MP_7.flac","snare2_OH_MP_8.flac","snare2_OH_MP_9.flac","snare2_OH_MP_10.flac","snare2_OH_MP_11.flac","snare2_OH_MP_12.flac","snare2_OH_MP_13.flac","snare2_OH_MP_14.flac","snare2OFF_OH_F_1.flac","snare2OFF_OH_F_2.flac","snare2OFF_OH_F_3.flac","snare2OFF_OH_F_4.flac","snare2OFF_OH_F_5.flac","snare2OFF_OH_F_6.flac","snare2OFF_OH_F_7.flac","snare2OFF_OH_F_8.flac","snare2OFF_OH_F_9.flac","snare2OFF_OH_F_10.flac","snare2OFF_OH_P_1.flac","snare2OFF_OH_P_2.flac","snare2OFF_OH_P_3.flac","snare2OFF_OH_P_4.flac","snare2OFF_OH_P_5.flac","snare2OFF_OH_P_6.flac","snareOFF_OH_F_1.flac","snareOFF_OH_F_2.flac","snareOFF_OH_F_3.flac","snareOFF_OH_F_4.flac","snareOFF_OH_F_5.flac","snareOFF_OH_F_6.flac","snareOFF_OH_F_7.flac","snareOFF_OH_F_8.flac","snareOFF_OH_F_9.flac","snareOFF_OH_F_10.flac","snareOFF_OH_P_1.flac","snareOFF_OH_P_2.flac","snareOFF_OH_P_3.flac","snareOFF_OH_P_4.flac","snareOFF_OH_P_5.flac","snareStick_OH_F_1.flac","snareStick_OH_F_2.flac","snareStick_OH_F_3.flac","snareStick_OH_F_4.flac","snareStick_OH_F_5.flac","snareStick_OH_F_6.flac","snareStick_OH_F_7.flac","snareStick_OH_F_8.flac","snareStick_OH_F_9.flac","snareStick_OH_F_10.flac","splash1_OH_F_1.flac","splash1_OH_F_2.flac","splash1_OH_F_3.flac","splash1_OH_F_4.flac","splash1_OH_F_5.flac","splash1_OH_P_1.flac","splash1_OH_P_2.flac","splash1_OH_P_3.flac","splash1_OH_P_4.flac","splash1_OH_P_5.flac"];
+const $=id=>document.getElementById(id);
+const namePart=n=>n.replace(/\.flac$/,'');
+const category=n=>{const s=n.toLowerCase();if(s.startsWith('kick'))return'kick';if(s.startsWith('snare'))return'snare';if(s.startsWith('hihat'))return'hihat';if(s.includes('tom'))return'tom';if(s.startsWith('ride'))return'ride';if(s.startsWith('crash'))return'crash';if(s.startsWith('china'))return'china';if(s.startsWith('splash'))return'splash';if(s.startsWith('cowbell'))return'cowbell';if(s.startsWith('bellchime'))return'bellchime';return'other'};
+const dyn=n=>{const m=n.match(/_(FF|MP|PP|Ghost|F|P)_(?:\d*)\.flac$/);return m?m[1]:''};
+const base=n=>namePart(n).replace(/_(FF|MP|PP|Ghost|F|P)_\d*$/,'');
+const itemsPerPage=16;
+let filtered=filenames,page=0,ctx=null,src=null,activeGain=null,currently='',playRevision=0;
+const cache=new Map();
+const inFlight=new Map();
+const maxCached=36;
+const cdn='https://cdn.jsdelivr.net/gh/studiorack/salamander-drumkit@master/Samples/';
+const origin='https://raw.githubusercontent.com/studiorack/salamander-drumkit/master/Samples/';
+function saveBuffer(name,buffer){
+ if(cache.has(name))cache.delete(name);
+ cache.set(name,buffer);
+ if(cache.size>maxCached)cache.delete(cache.keys().next().value);
+ return buffer;
+}
+async function loadBuffer(name){
+ if(cache.has(name)){
+  const cached=cache.get(name);cache.delete(name);cache.set(name,cached);
+  return cached;
+ }
+ if(inFlight.has(name))return inFlight.get(name);
+ const promise=(async()=>{
+  let lastError;
+  for(const base of [cdn,origin]){
+   try{
+    const response=await fetch(base+encodeURIComponent(name));
+    if(!response.ok)throw Error('HTTP '+response.status);
+    const decoded=await ctx.decodeAudioData(await response.arrayBuffer());
+    return saveBuffer(name,decoded);
+   }catch(e){lastError=e}
+  }
+  throw lastError||Error('לא ניתן לטעון את הדגימה');
+ })();
+ inFlight.set(name,promise);
+ try{return await promise}finally{inFlight.delete(name)}
+}
+function preloadNext(name){
+ // Preload only two adjacent samples, not the entire 536-file library.
+ const index=filtered.indexOf(name);
+ if(index<0||!ctx)return;
+ const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+ if(connection&&(connection.saveData||/2g/.test(connection.effectiveType||'')))return;
+ for(const n of filtered.slice(index+1,index+3)){
+  if(!cache.has(n)&&!inFlight.has(n))void loadBuffer(n).catch(()=>{});
+ }
+}
+const setStatus=s=>{$('status').textContent=s};
+function filterList(){
+ const family=$('family').value,dynamics=$('dynamics').value,q=$('search').value.trim().toLowerCase();
+ filtered=filenames.filter(n=>(!family||category(n)===family)&&(!dynamics||dyn(n)===dynamics)&&(!q||n.toLowerCase().includes(q)));
+ page=0;render();
+}
+function render(){
+ const pages=Math.max(1,Math.ceil(filtered.length/itemsPerPage));page=Math.min(page,pages-1);
+ $('count').textContent=filtered.length+' דגימות';$('page').textContent=(page+1)+' / '+pages;
+ $('prev').disabled=page===0;$('next').disabled=page>=pages-1;
+ const host=$('list');host.replaceChildren();
+ for(const n of filtered.slice(page*itemsPerPage,(page+1)*itemsPerPage)){
+  const item=document.createElement('div');item.className='sample'+(n===currently?' is-playing':'');
+  const label=document.createElement('div');label.style.minWidth='0';
+  const title=document.createElement('div');title.className='name';title.textContent=n;
+  const meta=document.createElement('div');meta.className='sub';meta.textContent='משפחה: '+category(n)+' · עוצמה: '+(dyn(n)||'לא מסומנת');
+  label.append(title,meta);
+  const btn=document.createElement('button');btn.textContent=n===currently?'■ עצור':'▶ נגן';
+  btn.setAttribute('aria-label','השמע '+n);
+  btn.onclick=()=>{if(currently===n){stop();return}void play(n)};
+  item.append(label,btn);host.append(item);
+ }
+}
+function stop(){
+ playRevision++;if(src){try{src.stop()}catch(e){}src=null}currently='';render();setStatus('נעצר');
+}
+async function play(name){
+ const revision=++playRevision;
+ if(src){try{src.stop()}catch(e){}src=null}
+ currently=name;render();setStatus('טוען '+name+'…');
+ try{
+  if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();
+  await ctx.resume();
+  const buffer=await loadBuffer(name);
+  if(playRevision!==revision)return;
+  src=ctx.createBufferSource();src.buffer=buffer;
+  activeGain=ctx.createGain();activeGain.gain.value=Number($('volume').value)/100;
+  src.connect(activeGain);activeGain.connect(ctx.destination);
+  src.onended=()=>{if(playRevision===revision){currently='';src=null;render()}};
+  src.start();
+  setStatus('▶ '+name);
+  preloadNext(name);
+ }catch(e){if(playRevision===revision){currently='';render();setStatus('שגיאת טעינה או פענוח: '+e.message+'. בדוק תמיכה ב־FLAC או נסה לפתוח בדפדפן Chrome.')}}
+}
+$('family').onchange=filterList;$('dynamics').onchange=filterList;$('search').oninput=filterList;
+$('prev').onclick=()=>{page--;render();window.scrollTo({top:0,behavior:'smooth'})};
+$('next').onclick=()=>{page++;render();window.scrollTo({top:0,behavior:'smooth'})};
+$('volume').oninput=()=>{$('volval').textContent=$('volume').value+'%';if(activeGain&&ctx)activeGain.gain.setTargetAtTime(Number($('volume').value)/100,ctx.currentTime,.015)};
+render();
+})();
+</script></body></html>
