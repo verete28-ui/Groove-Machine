@@ -48,7 +48,7 @@ function smokeGrooveCore({core,engine,machine}){
   phase='variation';const buttons=[];
   const walk=n=>{
    if(!n||typeof n!=='object')return;
-   if(n.className==='variation-btn')buttons.push(n);
+   if(typeof n.className==='string'&&n.className.startsWith('variation-btn'))buttons.push(n);
    for(const c of n.children||[])walk(c);
   };
   walk(id('variations'));
